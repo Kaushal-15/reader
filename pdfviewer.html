@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReadMind - Book Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rippleui@1.12.1/dist/css/styles.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <style>
+        .textLayer {
+            position: absolute;
+            pointer-events: auto;
+        }
+        .textLayer > div {
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+        }
+        .dark { background-color: rgba(0, 0, 0, 0.514); color: #ecd69f; }
+        .dark .bg-white { background-color: #ecd69f; color: rgba(0, 0, 0, 0.514); }
+        .dark .text-gray-600 { color: rgba(0, 0, 0, 0.514); }
+
+        #contextMenu { 
+            position: fixed; 
+            display: none; 
+            background: #ecd69f; 
+            border: 1px solid #ddd; 
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2); 
+            z-index: 1000; 
+            padding: 8px; 
+            border-radius: 5px; 
+        }
+        #contextMenu ul { list-style: none; padding: 0; margin: 0; }
+        #contextMenu li { padding: 6px 12px; cursor: pointer; color: #333; }
+        #contextMenu li:hover { background: #f0f0f0; }
+
+        .floating-panel {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            width: 250px;
+            background: white;
+            padding: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            display: none;
+        }
+        .note-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f8f8;
+            padding: 5px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+        .note-item p {
+            flex-grow: 1;
+            margin: 0;
+            padding: 3px;
+            cursor: text;
+        }
+        .note-item button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .note-marker {
+            position: absolute;
+            cursor: pointer;
+            color: red;
+            font-size: 20px;
+            z-index: 100;
+        }
+        .note-marker:hover { color: darkred; }
+
+        .ai-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            background: white;
+            padding: 20px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            z-index: 1001;
+            display: none;
+        }
+
+        .nav-buttons {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        .nav-buttons button {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .nav-buttons button:hover {
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .floating-ai-section {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            width: 400px;
+            height: 600px;
+            background: white;
+            padding: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            z-index: 1002;
+            display: none;
+        }
+        .floating-ai-section iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+        }
+
+        .relative { position: relative; overflow-y: auto; height: 800px; border: 1px solid #ddd; border-radius: 4px; }
+        #pdfViewer { width: 100%; min-height: 600px; background: #fff; }
+        canvas { margin: 0 auto; display: block; }
+    </style>
+</head>
+<body class="bg-[#ecd69f] min-h-screen">
+    <header class="sticky top-0 z-50 bg-[#ecd69f] shadow-md">
+        <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="index.html" class="font-['Pacifico'] text-2xl text-[#333]">ReadMind</a>
+            </div>
+            <a href="books.html" class="text-[#333]">Books</a>
+            <a href="library.html" class="text-[#333]">Library</a>
+            <a href="progress.html" class="text-[#333] font-bold">Progress</a>
+            <div class="dropdown">
+                <label class="btn btn-solid-primary my-2" tabindex="0">Features</label>
+                <div class="dropdown-menu dropdown-menu-bottom-right border border-gray-10">
+                    <a class="dropdown-item text-sm" data-action="addNote">Add note</a>
+                    <a class="dropdown-item text-sm" data-action="aiWord">AI Word</a>
+                    <a class="dropdown-item text-sm" data-action="aiSummarize">AI Summarization</a>
+                    <a class="dropdown-item text-sm" data-action="mcq">MCQ</a>
+                    <a class="dropdown-item text-sm" data-action="flashCards">Flash Cards</a>
+                </div>
+            </div>
+            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center"><i class="ri-moon-line ri-xl"></i></button>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg p-8 shadow-lg relative">
+            <h2 class="text-2xl font-bold mb-4">Book Viewer</h2>
+            <div class="relative">
+                <div id="pdfViewer" class="w-full"></div>
+            </div>
+            <div id="notes-panel" class="floating-panel">
+                <h3>Saved Notes</h3>
+                <div id="notes-list"></div>
+                <button onclick="toggleNotesPanel()" class="mt-2 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">Close</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="contextMenu">
+        <ul>
+            <li data-action="addNote">Add Note</li>
+            <li data-action="aiWord">AI Word</li>
+            <li data-action="aiSummarize">AI Summarization</li>
+            <li data-action="mcq">MCQ</li>
+            <li data-action="flashCards">Flash Cards</li>
+        </ul>
+    </div>
+
+    <div id="aiWindow" class="ai-window">
+        <h3 id="aiWindowTitle"></h3>
+        <div id="aiWindowContent"></div>
+        <button onclick="closeAIWindow()">Close</button>
+    </div>
+
+    <div id="floatingAiSection" class="floating-ai-section">
+        <iframe id="aiIframe" src=""></iframe>
+    </div>
+
+    <div class="nav-buttons">
+        <button id="prevPage" onclick="goToPrevPage()"><i class="ri-arrow-left-s-line"></i></button>
+        <button id="nextPage" onclick="goToNextPage()"><i class="ri-arrow-right-s-line"></i></button>
+    </div>
+
+    <script>
+        const pdfViewer = document.getElementById('pdfViewer');
+        const contextMenu = document.getElementById('contextMenu');
+        const notesList = document.getElementById('notes-list');
+        const notesPanel = document.getElementById('notes-panel');
+        const aiWindow = document.getElementById('aiWindow');
+        const aiWindowTitle = document.getElementById('aiWindowTitle');
+        const aiWindowContent = document.getElementById('aiWindowContent');
+        const floatingAiSection = document.getElementById('floatingAiSection');
+        const aiIframe = document.getElementById('aiIframe');
+
+        let selectedX = null, selectedY = null;
+        const params = new URLSearchParams(window.location.search);
+        let bookUrl = params.get('book');
+        const notesKey = bookUrl ? `notes_${bookUrl}` : "savedNotes";
+
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        const scale = 1.0;
+        let useCustomContextMenu = true;
+        let hasSentFullText = false;
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+
+        async function loadPDF() {
+            try {
+                console.log('Attempting to load PDF with URL:', bookUrl);
+                if (bookUrl && !bookUrl.startsWith('http')) {
+                    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+                    bookUrl = `${baseUrl}/${bookUrl}`;
+                    console.log('Resolved PDF URL:', bookUrl);
+                }
+
+                if (!bookUrl) {
+                    pdfViewer.innerHTML = '<p style="color: red;">No book specified. Add ?book=/path/to/book.pdf to the URL.</p>';
+                    console.error('No book URL provided in query parameters.');
+                    return;
+                }
+
+                pdfViewer.innerHTML = '<p>Loading PDF...</p>';
+                pdfViewer.style.display = 'block';
+                pdfViewer.style.background = '#fff';
+
+                const loadingTask = pdfjsLib.getDocument({ url: bookUrl });
+                pdfDoc = await loadingTask.promise;
+                console.log('PDF loaded successfully. Total pages:', pdfDoc.numPages);
+                renderPage(pageNum);
+                fetchNotes();
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                pdfViewer.innerHTML = `<p style="color: red;">Failed to load PDF: ${error.message}. Please ensure the file exists and is accessible.</p>`;
+                pdfViewer.style.display = 'block';
+            }
+        }
+
+        loadPDF();
+
+        function renderPage(num) {
+            if (!pdfDoc) {
+                console.error('Cannot render page: pdfDoc is not loaded.');
+                pdfViewer.innerHTML = '<p style="color: red;">PDF document not loaded.</p>';
+                return;
+            }
+
+            console.log('Rendering page:', num);
+            pageRendering = true;
+            pdfDoc.getPage(num).then((page) => {
+                const viewport = page.getViewport({ scale: scale });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.style.border = '1px solid #000';
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+
+                pdfViewer.innerHTML = '';
+                pdfViewer.style.display = 'block';
+                console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+
+                const renderTask = page.render(renderContext);
+                renderTask.promise.then(() => {
+                    console.log('Page rendered successfully:', num);
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                }).catch((error) => {
+                    console.error('Error rendering page:', error);
+                    pdfViewer.innerHTML = `<p style="color: red;">Error rendering page: ${error.message}</p>`;
+                    pageRendering = false;
+                });
+
+                pdfViewer.appendChild(canvas);
+
+                page.getTextContent().then((textContent) => {
+                    const textLayerDiv = document.createElement('div');
+                    textLayerDiv.className = 'textLayer';
+                    textLayerDiv.style.position = 'absolute';
+                    textLayerDiv.style.top = '0';
+                    textLayerDiv.style.left = '0';
+                    textLayerDiv.style.width = `${canvas.width}px`;
+                    textLayerDiv.style.height = `${canvas.height}px`;
+                    textLayerDiv.style.background = 'rgba(255, 255, 0, 0.1)';
+                    pdfViewer.appendChild(textLayerDiv);
+
+                    pdfjsLib.renderTextLayer({
+                        textContent: textContent,
+                        container: textLayerDiv,
+                        viewport: viewport,
+                        textDivs: []
+                    }).promise.catch((error) => {
+                        console.error('Error rendering text layer:', error);
+                    });
+                }).catch((error) => {
+                    console.error('Error getting text content:', error);
+                });
+            }).catch((error) => {
+                console.error('Error getting page:', error);
+                pdfViewer.innerHTML = `<p style="color: red;">Error loading page ${num}: ${error.message}</p>`;
+                pageRendering = false;
+            });
+            pageNum = num;
+        }
+
+        function goToPrevPage() {
+            if (pageNum <= 1 || pageRendering) return;
+            pageNum--;
+            if (pageRendering) {
+                pageNumPending = pageNum;
+            } else {
+                renderPage(pageNum);
+            }
+        }
+
+        function goToNextPage() {
+            if (!pdfDoc || pageNum >= pdfDoc.numPages || pageRendering) return;
+            pageNum++;
+            if (pageRendering) {
+                pageNumPending = pageNum;
+            } else {
+                renderPage(pageNum);
+            }
+        }
+
+        async function extractFullText() {
+            if (!pdfDoc) {
+                console.error('Cannot extract text: pdfDoc is not loaded.');
+                return "";
+            }
+            let fullText = "";
+            try {
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    if (textContent.items.length === 0) {
+                        console.warn(`Page ${i} has no text content.`);
+                        continue;
+                    }
+                    const pageText = textContent.items.map(item => item.str).join(" ");
+                    fullText += pageText + "\n";
+                    console.log(`Extracted text from page ${i}:`, pageText.substring(0, 100) + '...');
+                }
+            } catch (error) {
+                console.error('Error extracting text from PDF:', error);
+                return "";
+            }
+            if (!fullText.trim()) {
+                console.error('Extracted text is empty after processing all pages.');
+                return "";
+            }
+            console.log('Full text extracted successfully:', fullText.substring(0, 100) + '...');
+            return fullText.trim();
+        }
+
+        const featureHandlers = {
+            aiWord: () => {
+                window.open('dict.html', 'Dictionary', 'width=400,height=600') || 
+                alert('Please allow pop-ups for this site.');
+            },
+            addNote: () => {
+                const noteContent = prompt("Enter your note:");
+                if (!noteContent) return;
+                const noteId = `note-${Date.now()}`;
+                const note = {
+                    id: noteId,
+                    x: selectedX || window.innerWidth / 2,
+                    y: selectedY || window.innerHeight / 2,
+                    content: noteContent,
+                    bookUrl: bookUrl
+                };
+                let notes = getSavedNotes();
+                notes.push(note);
+                localStorage.setItem(notesKey, JSON.stringify(notes));
+                addNoteMarker(noteId, note.x, note.y, noteContent,'📍');
+                displayNotes();
+            },
+            aiSummarize: () => {
+                const selectedText = window.getSelection().toString().trim();
+                if (!selectedText) {
+                    alert('Select text first then click AI Summarize.');
+                    useCustomContextMenu = false;
+                    return;
+                }
+                floatingAiSection.style.display = 'block';
+                aiIframe.src = 'ai.html';
+                aiIframe.onload = () => {
+                    aiIframe.contentWindow.postMessage({ selectedText }, '*');
+                };
+            },
+            mcq: async () => {
+                const fullText = await extractFullText();
+                if (!fullText) {
+                    alert('No text available to generate MCQs.');
+                    return;
+                }
+                const mcqWindow = window.open('mcq.html', 'MCQWindow', 'width=800,height=600');
+                if (!mcqWindow) {
+                    alert('Please allow pop-ups for this site.');
+                    return;
+                }
+                setTimeout(() => {
+                    mcqWindow.postMessage({ fullText }, '*');
+                    console.log('Sent fullText to MCQ window:', fullText.substring(0, 100) + '...');
+                }, 1000);
+            },
+            flashCards: async () => {
+                const fullText = await extractFullText();
+                if (!fullText) {
+                    alert('No text available to generate Flash Cards.');
+                    return;
+                }
+                console.log('Opening flash.html with fullText:', fullText.substring(0, 100) + '...');
+                const flashWindow = window.open('flash.html', 'FlashWindow', 'width=800,height=600');
+                if (!flashWindow) {
+                    alert('Please allow pop-ups for this site.');
+                    return;
+                }
+                if (!hasSentFullText) {
+                    setTimeout(() => {
+                        flashWindow.postMessage({ fullText }, '*');
+                        console.log('Sent fullText to Flash window:', fullText.substring(0, 100) + '...');
+                        hasSentFullText = true;
+                    }, 1000);
+                }
+                window.addEventListener('message', (e) => {
+                    if (e.data.request === 'sendFullText' && flashWindow) {
+                        console.log('Flash window requested to resend fullText.');
+                        flashWindow.postMessage({ fullText }, '*');
+                        console.log('Resent fullText to Flash window:', fullText.substring(0, 100) + '...');
+                    }
+                });
+            }
+        };
+
+        function handleFeatureClick(e) {
+            const action = e.target.getAttribute('data-action');
+            if (featureHandlers[action]) {
+                featureHandlers[action]();
+            }
+            contextMenu.style.display = 'none';
+            console.log('Handled feature click:', action);
+        }
+
+        document.querySelectorAll('#contextMenu li').forEach(item => {
+            item.addEventListener('click', handleFeatureClick);
+        });
+
+        document.querySelectorAll('.dropdown-menu a').forEach(item => {
+            item.addEventListener('click', handleFeatureClick);
+        });
+
+        function getSavedNotes() {
+            return JSON.parse(localStorage.getItem(notesKey)) || [];
+        }
+
+        function displayNotes() {
+            notesList.innerHTML = "";  
+            let notes = getSavedNotes();
+            notes.forEach((note) => {
+                const noteItem = document.createElement("div");
+                noteItem.className = "note-item";
+                noteItem.innerHTML = `
+                    <p contenteditable="true" onblur="editNote('${note.id}', this)">${note.content}</p>
+                    <button onclick="deleteNote('${note.id}')">🗑️</button>
+                `;
+                notesList.appendChild(noteItem);
+                addNoteMarker(note.id, note.x, note.y, note.content);
+            });
+        }
+
+        function editNote(id, element) {
+            let notes = getSavedNotes();
+            let note = notes.find(n => n.id === id);
+            if (note) {
+                note.content = element.innerText.trim();
+                localStorage.setItem(notesKey, JSON.stringify(notes));
+            }
+        }
+
+        function deleteNote(id) {
+            let notes = getSavedNotes();
+            notes = notes.filter(n => n.id !== id);
+            localStorage.setItem(notesKey, JSON.stringify(notes));
+            document.getElementById(id)?.remove();
+            displayNotes();
+        }
+
+        function addNoteMarker(id, x, y, content) {
+            const marker = document.createElement('span');
+            marker.id = id;
+            marker.className = 'note-marker';
+            marker.style.top = `${y}px`;
+            marker.style.left = `${x}px`;
+            marker.style.display = 'block';
+            marker.title = content;
+            marker.textContent = '📍';
+            document.body.appendChild(marker);
+            console.log('Added note marker:', id, 'at position:', x, y);
+        }
+
+        function toggleNotesPanel() {
+            notesPanel.style.display = notesPanel.style.display === 'none' ? 'block' : 'none';
+            console.log('Toggled notes panel. Display:', notesPanel.style.display);
+        }
+
+        function closeAIWindow() {
+            aiWindow.style.display = 'none';
+            console.log('Closed AI window');
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data === 'closeAiSection') {
+                floatingAiSection.style.display = 'none';
+                console.log('Closed floating AI section');
+            }
+        });
+
+        window.addEventListener('contextmenu', (e) => {
+            if (useCustomContextMenu) {
+                e.preventDefault();
+                selectedX = e.pageX;
+                selectedY = e.pageY;
+                contextMenu.style.top = `${selectedY}px`;
+                contextMenu.style.left = `${selectedX}px`;
+                contextMenu.style.display = 'block';
+                console.log('Opened context menu at:', selectedX, selectedY);
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!contextMenu.contains(e.target)) {
+                contextMenu.style.display = 'none';
+                console.log('Closed context menu');
+            }
+        });
+
+        document.addEventListener('selectionchange', () => {
+            const selectedText = window.getSelection().toString().trim();
+            if (selectedText && !useCustomContextMenu) {
+                useCustomContextMenu = true;
+            }
+        });
+
+        window.onload = displayNotes;
+    </script>
+</body>
+</html>

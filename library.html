@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library - ReadMind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    backgroundImage: {
+                        'book-cover': "url('https://images-na.ssl-images-amazon.com/images/I/71tbalAHYCL.jpg')",
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
+    <style>
+        .dark { background-color: rgba(0, 0, 0, 0.514); color: #ecd69f; }
+        .dark .bg-white { background-color: #ecd69f; color: rgba(0, 0, 0, 0.514); }
+
+        /* Floating Notes Panel */
+        #notesPanel {
+            position: fixed;
+            display: none;
+            width: 300px;
+            background: white;
+            padding: 15px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+        }
+        .dark #notesPanel {
+            background: #222;
+            color: #ecd69f;
+        }
+        #notesPanel textarea {
+            width: 100%;
+            height: 150px;
+            border: 1px solid #ccc;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        #notesPanel button {
+            margin-top: 10px;
+            display: block;
+            width: 100%;
+            padding: 8px;
+            background: green;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #notesPanel button:hover {
+            background: darkgreen;
+        }
+
+        #closeNotes {
+            background: red !important;
+        }
+        #closeNotes:hover {
+            background: darkred !important;
+        }
+
+        /* Note Marker (AI Icon) */
+        .note-marker {
+            position: absolute;
+            cursor: pointer;
+            z-index: 100;
+            color: #000; /* Icon color */
+        }
+        .note-marker:hover {
+            color: #ff0000; /* Icon color on hover */
+        }
+
+        /* Floating AI Section */
+        .floating-panel {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            width: 300px;
+            background: white;
+            padding: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            display: none;
+            z-index: 1002;
+        }
+
+        /* Book Card Styles */
+        .book-card {
+            transition: transform 0.2s;
+        }
+        .book-card:hover {
+            transform: scale(1.05);
+        }
+        h4{
+            text-align: center;
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+<body class="bg-[#ecd69f] min-h-screen">
+    <header class="sticky top-0 z-50 bg-[#ecd69f] shadow-md">
+        <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 flex items-center justify-center"><i class="ri-book-line ri-2x"></i></div>
+                <span class="font-['Pacifico'] text-2xl">ReadMind</span>
+            </div>
+            <div class="flex items-center space-x-8">
+                <a href="index.html" class="hover:text-gray-600">Home</a>
+                <a href="library.html" class="hover:text-gray-600">Library</a>
+                <a href="books.html" class="hover:text-gray-600">Books</a>
+            </div>
+            
+            <!-- Dark Mode Toggle -->
+            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center">
+                <i class="ri-sun-line ri-xl"></i>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Floating AI Section -->
+    <div id="aiFloatingSection" class="floating-panel">
+        <iframe id="dictIframe" src="dict.html" width="100%" height="400px" style="border: none;"></iframe>
+    </div>
+
+    <!-- Library Content -->
+    <main class="container mx-auto px-4 pt-8">
+        <h1 class="text-2xl font-bold mb-4">Library</h1>
+
+        <!-- Predefined Books -->
+        <h4 class="text-xl font-semibold mb-2">Popular Books</h4>
+        <div class="grid grid-cols-4 gap-6 mb-8">
+            <div class="book-card">
+                <img src="atomic.jpeg" class="w-full h-48 object-cover rounded-t-lg">
+                <div class="p-4 border border-t-0 rounded-b-lg">
+                    <h3 class="font-semibold">Atomic Habits</h3>
+                    <button onclick="redirectToUpload('atomic.pdf')" class="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        Read Now
+                    </button>
+                </div>
+            </div>
+            <div class="book-card">
+                <img src="habit.jpeg" class="w-full h-48 object-cover rounded-t-lg">
+                <div class="p-4 border border-t-0 rounded-b-lg">
+                    <h3 class="font-semibold">The Power of Habit</h3>
+                    <button onclick="redirectToUpload('Charles-Duhigg.The-Power-of-Habit.pdf')" class="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        Read Now
+                    </button>
+                </div>
+            </div>
+            <div class="book-card">
+                <img src="deep.jpeg" class="w-full h-48 object-cover rounded-t-lg">
+                <div class="p-4 border border-t-0 rounded-b-lg">
+                    <h3 class="font-semibold">Deep Work</h3>
+                    <button onclick="redirectToUpload('Deep Work_ Rules for focused success in a distracted world ( PDFDrive ).pdf')" class="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        Read Now
+                    </button>
+                </div>
+            </div>
+            <div class="book-card">
+                <img src="7.jpeg" class="w-full h-48 object-cover rounded-t-lg">
+                <div class="p-4 border border-t-0 rounded-b-lg">
+                    <h3 class="font-semibold">The 7 Habits of Highly Effective People</h3>
+                    <button onclick="redirectToUpload('ati12052021_1.pdf')" class="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        Read Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Dark Mode Toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+        });
+
+        // Load Dark Mode
+        function loadDarkMode() {
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark');
+            }
+        }
+
+        // Redirect to PDF Viewer Page with PDF URL
+        function redirectToUpload(pdfUrl) {
+            if (pdfUrl) {
+                window.location.href = `pdfviewer.html?book=${encodeURIComponent(pdfUrl)}`;
+            } else {
+                window.location.href = 'upload.html';
+            }
+        }
+
+        // Load Dark Mode on Page Load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDarkMode();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "name": "reader",
+  "version": "1.0.0",
+  "description": "",
+  "main": "api.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaushal-15/read-mind.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kaushal-15/read-mind/issues"
+  },
+  "homepage": "https://github.com/Kaushal-15/read-mind#readme",
+  "dependencies": {
+    "@tailwindcss/vite": "^4.0.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "fs": "^0.0.1-security",
+    "preline": "^2.7.0",
+    "rippleui": "^1.12.1",
+    "tailwindcss": "^4.0.7"
+  }
+}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Book</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body onload="loadBook(); loadDarkMode();">
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo"><a href="index.html">Read Mind</a></div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="books.html">My Books</a></li>
+        </ul>
+        <div class="user-info">
+            <img id="profilePic" src="" alt="Profile Pic">
+            <span id="userName"></span>
+        </div>
+        <button id="darkModeToggle">🌙 Dark Mode</button>
+    </nav>
+
+    <!-- Book Viewer -->
+    <div class="book-viewer">
+        <h2 id="bookTitle"></h2>
+        <iframe id="bookContent" width="100%" height="600px" style="border: none;"></iframe>
+    </div>
+
+    <script>
+        function loadBook() {
+            const index = localStorage.getItem("currentBookIndex");
+            const books = JSON.parse(localStorage.getItem("userBooks"));
+            const book = books[index];
+
+            if (book) {
+                document.getElementById("bookTitle").textContent = book.name;
+
+                // Display PDF or other supported formats
+                if (book.type === "application/pdf") {
+                    document.getElementById("bookContent").src = book.content;
+                } else {
+                    alert("Unsupported file format. Please upload a PDF.");
+                }
+            } else {
+                alert("Book not found.");
+                window.location.href = "books.html";
+            }
+        }
+
+        // Dark Mode Toggle
+        document.getElementById("darkModeToggle").addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+        });
+
+        function loadDarkMode() {
+            if (localStorage.getItem("darkMode") === "true") {
+                document.body.classList.add("dark-mode");
+            }
+        }
+    </script>
+</body>
+</html>

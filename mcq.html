@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCQs - ReadMind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #ecd69f; }
+        .mcq-container { max-width: 800px; margin: 0 auto; }
+        .mcq-item { margin-bottom: 20px; }
+        .mcq-question { font-weight: bold; margin-bottom: 10px; }
+        .mcq-option { margin-left: 20px; }
+        .close-btn { position: fixed; top: 10px; right: 10px; }
+        .submit-btn, .refresh-btn { display: block; margin: 20px auto; }
+        .result { margin-top: 20px; padding: 10px; border-radius: 5px; }
+        .result.correct { background-color: #d4edda; color: #155724; }
+        .result.incorrect { background-color: #f8d7da; color: #721c24; }
+        .score { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="mcq-container">
+        <h1 class="text-2xl font-bold mb-4">Multiple Choice Questions</h1>
+        <button id="refreshBtn" class="refresh-btn bg-green-500 text-white px-4 py-2 rounded">Refresh Questions</button>
+        <div id="mcqList"></div>
+        <button id="submitBtn" class="submit-btn bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600" disabled>Submit Answers</button>
+        <div id="resultContainer" class="result hidden"></div>
+        <button class="close-btn bg-red-500 text-white px-4 py-2 rounded" onclick="window.close()">Close</button>
+    </div>
+
+    <script>
+        const mcqList = document.getElementById('mcqList');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        const refreshBtn = document.getElementById('refreshBtn');
+        let mcqs = [];
+        let userAnswers = {};
+        let desiredQuestionCount = 10; // Default number of questions
+
+        window.addEventListener('message', (e) => {
+            if (e.data.fullText) {
+                promptForQuestionCount();
+                generateMCQs(e.data.fullText);
+            }
+        });
+
+        function promptForQuestionCount() {
+            let userInput = prompt("How many questions would you like? (Maximum 30)", "10");
+            desiredQuestionCount = Math.min(30, Math.max(1, parseInt(userInput) || 10));
+        }
+
+        function extractKeywords(sentence) {
+            const stopWords = ['a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
+            const words = sentence
+                .toLowerCase()
+                .replace(/[^\w\s]/g, '')
+                .split(/\s+/)
+                .filter(word => word.length > 3 && !stopWords.includes(word));
+            return [...new Set(words)].slice(0, 3);
+        }
+
+        function generateDistractors(correctAnswer, keywords) {
+            const distractors = [];
+            for (let i = 0; i < 3; i++) {
+                let distractor = correctAnswer;
+                keywords.forEach(keyword => {
+                    const alternatives = {
+                        'copyright': ['patent', 'trademark', 'license'],
+                        'book': ['magazine', 'article', 'journal'],
+                        'new': ['old', 'ancient', 'modern'],
+                        'edition': ['version', 'volume', 'chapter'],
+                        'permission': ['restriction', 'prohibition', 'ban']
+                    };
+                    const choices = alternatives[keyword] || ['alternative', 'random idea', 'different topic'];
+                    const randomAlt = choices[Math.floor(Math.random() * choices.length)];
+                    distractor = distractor.replace(new RegExp(keyword, 'gi'), randomAlt);
+                });
+                distractors.push(distractor !== correctAnswer ? distractor : `Alternative idea ${i + 1}`);
+            }
+            return distractors.slice(0, 3);
+        }
+
+        function generateMCQs(text) {
+            const sentences = text.split('.').filter(s => s.trim().length > 20);
+            mcqs = [];
+            userAnswers = {}; // Reset previous answers
+
+            for (let i = 0; i < Math.min(desiredQuestionCount, sentences.length); i++) {
+                const sentence = sentences[i].trim();
+                const question = `What is the main idea of: "${sentence}"?`;
+                const keywords = extractKeywords(sentence);
+                let correctAnswer = `The sentence discusses ${keywords.join(' and ')}.`;
+
+                if (sentence.toLowerCase().includes('copyright')) {
+                    correctAnswer = 'The sentence outlines copyright details for the book.';
+                } else if (sentence.toLowerCase().includes('thank you')) {
+                    correctAnswer = 'The sentence expresses gratitude for respecting copyright laws.';
+                }
+
+                const distractors = generateDistractors(correctAnswer, keywords);
+                const options = [correctAnswer, ...distractors].sort(() => Math.random() - 0.5);
+
+                mcqs.push({ question, options, correctAnswer });
+            }
+
+            displayMCQs();
+        }
+
+        function displayMCQs() {
+            mcqList.innerHTML = '';
+            mcqs.forEach((mcq, index) => {
+                const mcqDiv = document.createElement('div');
+                mcqDiv.className = 'mcq-item';
+                mcqDiv.innerHTML = `
+                    <div class="mcq-question">${index + 1}. ${mcq.question}</div>
+                    ${mcq.options.map((option, i) => `
+                        <div class="mcq-option">
+                            <input type="radio" name="q${index}" id="q${index}o${i}" value="${option}" onchange="updateAnswer(${index}, this.value)">
+                            <label for="q${index}o${i}">${String.fromCharCode(97 + i)}. ${option}</label>
+                        </div>
+                    `).join('')}
+                `;
+                mcqList.appendChild(mcqDiv);
+            });
+
+            checkAllAnswered();
+        }
+
+        function updateAnswer(questionIndex, selectedOption) {
+            userAnswers[questionIndex] = selectedOption;
+            checkAllAnswered();
+        }
+
+        function checkAllAnswered() {
+            submitBtn.disabled = Object.keys(userAnswers).length !== mcqs.length;
+        }
+
+        function calculateScore() {
+            let score = 0;
+            const results = mcqs.map((mcq, index) => {
+                const isCorrect = userAnswers[index] === mcq.correctAnswer;
+                if (isCorrect) score++;
+                return { question: mcq.question, userAnswer: userAnswers[index] || 'Not answered', correctAnswer: mcq.correctAnswer, isCorrect };
+            });
+
+            return { score, results };
+        }
+
+        function displayResults(score, results) {
+            resultContainer.innerHTML = `
+                <div class="score">Score: ${score} / ${mcqs.length}</div>
+                <div class="percentage">Percentage: ${(score / mcqs.length * 100).toFixed(2)}%</div>
+                ${results.map((result, index) => `
+                    <div class="result ${result.isCorrect ? 'correct' : 'incorrect'}">
+                        <p><strong>${index + 1}. ${result.question}</strong></p>
+                        <p>Your Answer: ${result.userAnswer}</p>
+                        <p>Correct Answer: ${result.correctAnswer}</p>
+                        <p>${result.isCorrect ? 'Correct!' : 'Incorrect'}</p>
+                    </div>
+                `).join('')}
+            `;
+            resultContainer.classList.remove('hidden');
+            submitBtn.style.display = 'none';
+        }
+
+        submitBtn.addEventListener('click', () => {
+            const { score, results } = calculateScore();
+            displayResults(score, results);
+        });
+
+        refreshBtn.addEventListener('click', () => location.reload());
+
+    </script>
+</body>
+</html>

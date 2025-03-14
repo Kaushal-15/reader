@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReadMind - Reading Progress</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rippleui@1.12.1/dist/css/styles.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
+    <style>
+        body {
+            background: #ecd69f;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+        .progress-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .progress-grid {
+            display: grid;
+            grid-template-columns: repeat(52, 16px);
+            gap: 4px;
+            justify-content: center;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .progress-square {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .progress-square:hover {
+            transform: scale(1.2);
+        }
+        .progress-square.read {
+            background: #2ea043;
+        }
+        .progress-square.partial {
+            background: #9be9a8;
+        }
+        .progress-square.empty {
+            background: #ebedf0;
+        }
+        .book-list {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .book-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
+        }
+        .book-item:hover {
+            background: #f5f5f5;
+        }
+        .book-item:last-child {
+            border-bottom: none;
+        }
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: #ebedf0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #2ea043;
+            transition: width 0.3s ease-in-out;
+        }
+        .dark {
+            background: rgba(0, 0, 0, 0.514);
+            color: #ecd69f;
+        }
+        .dark .progress-container,
+        .dark .book-list {
+            background: #2d2d2d;
+            color: #ecd69f;
+        }
+        .dark .progress-grid {
+            background: #383838;
+        }
+        .dark .progress-square.empty {
+            background: #555;
+        }
+        .dark .book-item {
+            border-bottom: 1px solid #444;
+        }
+        .dark .book-item:hover {
+            background: #383838;
+        }
+        .dark .progress-bar {
+            background: #555;
+        }
+        .dark .progress-fill {
+            background: #9be9a8;
+        }
+    </style>
+</head>
+<body class="bg-[#ecd69f] min-h-screen">
+    <header class="sticky top-0 z-50 bg-[#ecd69f] shadow-md">
+        <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="index.html" class="font-['Pacifico'] text-2xl text-[#333]">ReadMind</a>
+            </div>
+            <a href="books.html" class="text-[#333]">Books</a>
+            <a href="library.html" class="text-[#333]">Library</a>
+            <a href="progress.html" class="text-[#333] font-bold">Progress</a>
+            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center"><i class="ri-moon-line ri-xl"></i></button>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="progress-container">
+            <h1 class="text-2xl font-bold mb-6 flex items-center">
+                <i class="ri-bar-chart-line mr-2"></i> Reading Progress
+            </h1>
+            <div class="progress-grid" id="progressGrid"></div>
+            <div class="mt-4 text-sm text-gray-600 flex justify-center gap-8">
+                <span><span class="inline-block w-3 h-3 bg-[#ebedf0] mr-1"></span> No Activity</span>
+                <span><span class="inline-block w-3 h-3 bg-[#9be9a8] mr-1"></span> Partial</span>
+                <span><span class="inline-block w-3 h-3 bg-[#2ea043] mr-1"></span> Full Reading</span>
+            </div>
+        </div>
+
+        <div class="book-list">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="ri-book-open-line mr-2"></i> Your Books
+            </h2>
+            <ul id="bookList" class="space-y-2"></ul>
+        </div>
+    </main>
+
+    <script>
+        // Sample data - this would typically come from a backend
+        const readingData = {
+            books: [
+                { title: "Book 1", completed: true, pages: 300, pagesRead: 300, startDate: "2025-01-01" },
+                { title: "Book 2", completed: false, pages: 250, pagesRead: 150, startDate: "2025-02-01" },
+                { title: "Book 3", completed: true, pages: 400, pagesRead: 400, startDate: "2025-01-15" }
+            ],
+            dailyProgress: {}
+        };
+
+        function generateProgressGrid() {
+            const grid = document.getElementById('progressGrid');
+            const today = new Date();
+            const startDate = new Date(today.getFullYear(), 0, 1);
+            const daysInYear = 365 + (today.getFullYear() % 4 === 0 ? 1 : 0);
+            
+            readingData.books.forEach(book => {
+                const start = new Date(book.startDate);
+                const daysToComplete = book.pages / 10;
+                let currentDate = new Date(start);
+                
+                for (let i = 0; i < daysToComplete && i < book.pagesRead / 10; i++) {
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    readingData.dailyProgress[dateStr] = (readingData.dailyProgress[dateStr] || 0) + 10;
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            });
+
+            for (let i = 0; i < daysInYear; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+                
+                const square = document.createElement('div');
+                square.className = 'progress-square empty';
+                square.title = `${dateStr}: ${readingData.dailyProgress[dateStr] || 0} pages read`;
+                
+                if (readingData.dailyProgress[dateStr]) {
+                    square.classList.remove('empty');
+                    square.classList.add(readingData.dailyProgress[dateStr] >= 20 ? 'read' : 'partial');
+                }
+                
+                grid.appendChild(square);
+            }
+        }
+
+        function populateBookList() {
+            const bookList = document.getElementById('bookList');
+            readingData.books.forEach(book => {
+                const percentage = Math.round((book.pagesRead / book.pages) * 100);
+                const li = document.createElement('li');
+                li.className = 'book-item';
+                li.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium">${book.title}</span>
+                        <span class="text-sm text-gray-600">${book.pagesRead}/${book.pages} pages</span>
+                    </div>
+                    <div class="progress-bar mt-2">
+                        <div class="progress-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">${percentage}% complete</div>
+                `;
+                bookList.appendChild(li);
+            });
+        }
+
+        generateProgressGrid();
+        populateBookList();
+
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            darkModeToggle.innerHTML = `<i class="ri-${isDark ? 'sun' : 'moon'}-line ri-xl"></i>`;
+        });
+    </script>
+</body>
+</html>

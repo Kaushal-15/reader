@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Summarizer with Translation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #fff;
+            margin: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .container { padding: 20px; }
+        textarea { width: 100%; height: 100px; margin-bottom: 10px; }
+        .highlight { background-color: yellow; }
+        #loading { display: none; margin-top: 10px; }
+        #summaryText, #translatedText { 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            background: #f9f9f9; 
+            min-height: 50px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-xl font-bold">Book Summarizer with Translation</h1>
+        <textarea id="bookContent" class="border rounded p-2" placeholder="Selected text will appear here..." readonly></textarea>
+        <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="summarizeText()">Summarize</button>
+
+        <div id="loading">Processing summary and translation...</div>
+
+        <h2 class="text-lg font-semibold mt-4">Summary (English):</h2>
+        <p id="summaryText"></p>
+
+        <h2 class="text-lg font-semibold mt-4">Translation (Tamil):</h2>
+        <p id="translatedText"></p>
+
+        <h3 class="text-md font-semibold mt-4">Read Aloud (English Only):</h3>
+        <div class="flex gap-2 mt-2">
+            <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" onclick="readSummary()">Read Aloud</button>
+            <button class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600" onclick="pauseReading()">Pause</button>
+            <button class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onclick="closePage()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let fullSummary = "";
+        let isPaused = false;
+        let speechUtterance;
+        let currentWordIndex = 0;
+        let wordsArray = [];
+        let maleVoice = null;
+
+        const bookContentTextarea = document.getElementById('bookContent');
+        const summaryTextElement = document.getElementById('summaryText');
+        const translatedTextElement = document.getElementById('translatedText');
+        const loadingDiv = document.getElementById('loading');
+
+        function loadVoices() {
+            let voices = speechSynthesis.getVoices();
+            maleVoice = voices.find(voice => voice.name.includes("Male") || voice.name.includes("David") || voice.name.includes("Alex"));
+            if (!maleVoice) {
+                maleVoice = voices.find(voice => voice.lang === "en-US") || voices[0];
+            }
+            console.log('Loaded voices, selected male voice:', maleVoice ? maleVoice.name : 'None');
+        }
+
+        speechSynthesis.onvoiceschanged = loadVoices;
+        window.onload = loadVoices;
+
+        function summarizeText() {
+            let content = bookContentTextarea.value.trim();
+            if (!content) {
+                alert("No text to summarize.");
+                return;
+            }
+
+            loadingDiv.style.display = 'block';
+            summaryTextElement.innerText = '';
+            translatedTextElement.innerText = '';
+
+            let sentences = content.match(/[^.!?]+[.!?]+/g) || [content];
+            if (sentences.length === 0) {
+                loadingDiv.style.display = 'none';
+                summaryTextElement.innerText = "No valid sentences found to summarize.";
+                return;
+            }
+
+            // Take approximately 20% of sentences for the summary, or at least 1 sentence
+            const summarySentenceCount = Math.max(1, Math.ceil(sentences.length * 0.2));
+            let importantSentences = sentences.slice(0, summarySentenceCount);
+            fullSummary = importantSentences.join(" ");
+            summaryTextElement.innerText = fullSummary;
+
+            translateToTamil(fullSummary);
+        }
+
+        function readSummary() {
+            if (!fullSummary) {
+                alert("No summary to read!");
+                return;
+            }
+
+            stopReading();
+            wordsArray = fullSummary.split(/\s+/);
+            currentWordIndex = 0;
+            isPaused = false;
+            speakNextWord();
+        }
+
+        function speakNextWord() {
+            if (currentWordIndex >= wordsArray.length || isPaused) return;
+
+            let sentenceToSpeak = wordsArray.slice(currentWordIndex).join(" ");
+            speechUtterance = new SpeechSynthesisUtterance(sentenceToSpeak);
+            speechUtterance.rate = 1.0;
+            speechUtterance.pitch = 1.0;
+            speechUtterance.lang = "en-US";
+            if (maleVoice) speechUtterance.voice = maleVoice;
+
+            speechUtterance.onstart = () => highlightWords();
+            speechUtterance.onend = () => { if (!isPaused) stopReading(); };
+            speechSynthesis.speak(speechUtterance);
+        }
+
+        function highlightWords() {
+            let index = 0;
+            let interval = setInterval(() => {
+                if (index >= wordsArray.length || isPaused) {
+                    clearInterval(interval);
+                    return;
+                }
+                let highlightedText = wordsArray.map((word, i) => 
+                    i === index ? `<span class="highlight">${word}</span>` : word
+                ).join(" ");
+                summaryTextElement.innerHTML = highlightedText;
+                index++;
+            }, 300);
+        }
+
+        function pauseReading() {
+            isPaused = true;
+            speechSynthesis.cancel();
+        }
+
+        function stopReading() {
+            isPaused = false;
+            speechSynthesis.cancel();
+            summaryTextElement.innerHTML = fullSummary;
+        }
+
+        async function translateToTamil(text) {
+            try {
+                let response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ta`);
+                let data = await response.json();
+                if (data.responseStatus === 200) {
+                    translatedTextElement.innerText = data.responseData.translatedText;
+                } else {
+                    translatedTextElement.innerText = `Translation failed: ${data.responseDetails}`;
+                }
+            } catch (error) {
+                console.error("Translation Error:", error);
+                translatedTextElement.innerText = "Translation failed due to a network error. Please try again.";
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function closePage() {
+            window.parent.postMessage('closeAiSection', '*');
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.selectedText) {
+                console.log('Received selected text in ai.html:', e.data.selectedText);
+                bookContentTextarea.value = e.data.selectedText;
+                summarizeText(); // Auto-trigger summarization
+            }
+        });
+
+        // Request the selected text from the parent if not received
+        window.addEventListener('load', () => {
+            console.log('ai.html loaded, requesting selected text');
+            window.parent.postMessage({ request: 'resendSelectedText' }, '*');
+        });
+    </script>
+</body>
+</html>

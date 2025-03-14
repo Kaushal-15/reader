@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Cards - ReadMind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .flash-container { max-width: 800px; margin: 0 auto; }
+        .flash-card { 
+            margin-bottom: 20px; 
+            padding: 20px; 
+            border-radius: 10px; 
+            background: #f9f9f9; 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+            transition: transform 0.3s ease; 
+            cursor: pointer; 
+        }
+        .flash-card:hover { transform: scale(1.02); }
+        .flash-card.flipped .front { display: none; }
+        .flash-card.flipped .back { display: block; }
+        .flash-card .front { display: block; }
+        .flash-card .back { display: none; padding: 10px; background: #e0e0e0; border-radius: 5px; }
+        .close-btn { position: fixed; top: 10px; right: 10px; }
+        .submit-btn { display: block; margin: 20px auto; }
+        .result { margin-top: 20px; padding: 10px; border-radius: 5px; }
+        .result.correct { background-color: #d4edda; color: #155724; }
+        .result.incorrect { background-color: #f8d7da; color: #721c24; }
+        .score { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; }
+        .answer-input { margin-top: 10px; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flash-container">
+        <h1 class="text-2xl font-bold mb-4">Flash Cards</h1>
+        <div id="flashList"></div>
+        <button id="submitBtn" class="submit-btn bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600" disabled>Submit Answers</button>
+        <div id="resultContainer" class="result hidden"></div>
+        <button class="close-btn bg-red-500 text-white px-4 py-2 rounded" onclick="window.close()">Close</button>
+    </div>
+
+    <script>
+        const flashList = document.getElementById('flashList');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        let flashCards = [];
+        let userAnswers = {};
+        let hasGeneratedCards = false; // Flag to prevent re-rendering
+
+        window.addEventListener('message', (e) => {
+            // Only process the message if we haven't generated cards yet
+            if (hasGeneratedCards) {
+                console.log('Ignoring subsequent message as cards are already generated:', e.data);
+                return;
+            }
+
+            if (e.data.fullText) {
+                console.log('Received full text for flash cards:', e.data.fullText.substring(0, 100) + '...');
+                generateFlashCards(e.data.fullText);
+                hasGeneratedCards = true; // Set flag to prevent re-rendering
+            } else {
+                console.error('No fullText received in message:', e.data);
+                flashList.innerHTML = '<p style="color: red;">Error: No text received to generate flash cards.</p>';
+            }
+        });
+
+        function extractKeywords(sentence) {
+            const stopWords = ['a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
+            const words = sentence
+                .toLowerCase()
+                .replace(/[^\w\s]/g, '')
+                .split(/\s+/)
+                .filter(word => word.length > 3 && !stopWords.includes(word));
+            const keywords = [...new Set(words)].slice(0, 3);
+            console.log('Extracted keywords from sentence:', sentence, '->', keywords);
+            return keywords;
+        }
+
+        function generateFlashCards(text) {
+            if (!text || text.trim().length === 0) {
+                console.error('Text is empty or invalid:', text);
+                flashList.innerHTML = '<p style="color: red;">Error: No valid text to generate flash cards.</p>';
+                return;
+            }
+
+            const sentences = text.split('.').filter(s => s.trim().length > 20);
+            if (sentences.length === 0) {
+                console.error('No valid sentences found in text:', text);
+                flashList.innerHTML = '<p style="color: red;">Error: No valid sentences found to generate flash cards.</p>';
+                return;
+            }
+
+            console.log('Generating flash cards from', sentences.length, 'sentences');
+            flashCards = [];
+
+            for (let i = 0; i < Math.min(8, sentences.length); i++) {
+                const sentence = sentences[i].trim();
+                const keywords = extractKeywords(sentence);
+                let question = `What does this sentence relate to: "${sentence}"?`;
+                let answer = `The sentence discusses ${keywords.join(' and ')}.`;
+
+                if (sentence.toLowerCase().includes('copyright')) {
+                    answer = 'The sentence outlines copyright details for the book.';
+                } else if (sentence.toLowerCase().includes('thank you')) {
+                    answer = 'The sentence expresses gratitude for respecting copyright laws.';
+                } else if (sentence.toLowerCase().includes('supporting')) {
+                    answer = 'The sentence highlights support for writers and publishers.';
+                }
+
+                flashCards.push({ question, answer });
+            }
+
+            if (flashCards.length === 0) {
+                console.error('No flash cards generated.');
+                flashList.innerHTML = '<p style="color: red;">Error: No flash cards could be generated.</p>';
+                return;
+            }
+
+            console.log('Generated flash cards:', flashCards);
+            displayFlashCards(flashCards);
+        }
+
+        function displayFlashCards(cards) {
+            flashList.innerHTML = '';
+            cards.forEach((card, index) => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'flash-card';
+                cardDiv.style.display = 'block';
+                cardDiv.innerHTML = `
+                    <div class="front">
+                        <p>${index + 1}. ${card.question}</p>
+                        <input type="text" class="answer-input" id="answer-${index}" placeholder="Type your answer here..." oninput="updateAnswer(${index}, this.value)">
+                    </div>
+                    <div class="back">
+                        <p><strong>Answer:</strong> ${card.answer}</p>
+                    </div>
+                `;
+                cardDiv.addEventListener('click', () => {
+                    cardDiv.classList.toggle('flipped');
+                    console.log('Flipped card:', index);
+                });
+                flashList.appendChild(cardDiv);
+            });
+
+            console.log('Flash cards rendered:', cards.length);
+            checkAllAnswered();
+        }
+
+        function updateAnswer(cardIndex, userAnswer) {
+            userAnswers[cardIndex] = userAnswer.trim();
+            console.log('Updated answer for card', cardIndex, ':', userAnswer);
+            checkAllAnswered();
+        }
+
+        function checkAllAnswered() {
+            const totalCards = flashCards.length;
+            const answeredCards = Object.keys(userAnswers).filter(index => userAnswers[index].length > 0).length;
+            console.log('Answered cards:', answeredCards, '/', totalCards);
+
+            if (answeredCards === totalCards) {
+                submitBtn.disabled = false;
+                submitBtn.style.display = 'block';
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        function calculateScore() {
+            let score = 0;
+            const results = [];
+
+            flashCards.forEach((card, index) => {
+                const userAnswer = userAnswers[index] || '';
+                const correctKeywords = extractKeywords(card.answer.toLowerCase());
+                const userKeywords = userAnswer.toLowerCase().split(/\s+/);
+                const isCorrect = correctKeywords.some(keyword => userKeywords.includes(keyword));
+
+                if (isCorrect) score++;
+
+                results.push({
+                    question: card.question,
+                    userAnswer: userAnswer || 'Not answered',
+                    correctAnswer: card.answer,
+                    isCorrect: isCorrect
+                });
+            });
+
+            console.log('Calculated score:', score, 'Results:', results);
+            return { score, results };
+        }
+
+        function displayResults(score, results) {
+            resultContainer.innerHTML = `
+                <div class="score">Score: ${score} / ${flashCards.length}</div>
+                <div class="percentage">Percentage: ${(score / flashCards.length * 100).toFixed(2)}%</div>
+                ${results.map((result, index) => `
+                    <div class="result ${result.isCorrect ? 'correct' : 'incorrect'}">
+                        <p><strong>${index + 1}. ${result.question}</strong></p>
+                        <p>Your Answer: ${result.userAnswer}</p>
+                        <p>Correct Answer: ${result.correctAnswer}</p>
+                        <p>${result.isCorrect ? 'Correct!' : 'Incorrect'}</p>
+                    </div>
+                `).join('')}
+            `;
+            resultContainer.classList.remove('hidden');
+            resultContainer.style.display = 'block';
+            submitBtn.style.display = 'none';
+            flashList.style.display = 'none';
+            console.log('Displayed results. Score:', score);
+        }
+
+        submitBtn.addEventListener('click', () => {
+            const { score, results } = calculateScore();
+            displayResults(score, results);
+        });
+
+        if (!window.opener) {
+            document.body.innerHTML = '<p style="color: red;">Error: This page must be opened from the main viewer.</p>';
+            console.error('Flash cards page not opened from main viewer.');
+        }
+    </script>
+</body>
+</html>

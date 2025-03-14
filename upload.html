@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReadMind - Book Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rippleui@1.12.1/dist/css/styles.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <style>
+        .textLayer {
+            position: absolute;
+            pointer-events: auto;
+            background: none;
+        }
+        .textLayer > div {
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            background: none;
+        }
+        .dark { background-color: rgba(0, 0, 0, 0.514); color: #ecd69f; }
+        .dark .bg-white { background-color: #ecd69f; color: rgba(0, 0, 0, 0.514); }
+        .dark .text-gray-600 { color: rgba(0, 0, 0, 0.514); }
+
+        #contextMenu { 
+            position: fixed; 
+            display: none; 
+            background: #ecd69f; 
+            border: 1px solid #ddd; 
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2); 
+            z-index: 1000; 
+            padding: 8px; 
+            border-radius: 5px; 
+        }
+        #contextMenu ul { list-style: none; padding: 0; margin: 0; }
+        #contextMenu li { padding: 6px 12px; cursor: pointer; color: #333; }
+        #contextMenu li:hover { background: #f0f0f0; }
+
+        .notes-panel { margin-top: 20px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); z-index: 20; }
+        .dark .notes-panel { background: #333; color: #ecd69f; }
+        .note-item { display: flex; justify-content: space-between; align-items: center; background: #f8f8f8; padding: 5px; margin-bottom: 5px; border-radius: 5px; }
+        .dark .note-item { background: #444; }
+        .note-item p { flex-grow: 1; margin: 0; padding: 3px; cursor: text; }
+        .note-item button { border: none; background: none; cursor: pointer; font-size: 16px; }
+
+        .note-marker { position: absolute; cursor: pointer; color: red; font-size: 20px; z-index: 100; }
+        .note-marker:hover { color: darkred; }
+
+        .ai-window { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; background: white; padding: 20px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); border-radius: 8px; z-index: 1001; display: none; }
+
+        .nav-buttons { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 100; }
+        .nav-buttons button { background: rgba(255, 255, 255, 0.8); border: 1px solid #ccc; padding: 10px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); }
+        .nav-buttons button:hover { background: rgba(255, 255, 255, 1); }
+
+        .floating-ai-section { 
+            position: fixed; 
+            top: 50px; 
+            right: 20px; 
+            width: 400px; 
+            height: 600px; 
+            background: white; 
+            padding: 10px; 
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); 
+            border-radius: 8px; 
+            z-index: 1002; 
+            display: none; 
+        }
+        .floating-ai-section iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            border-radius: 8px; 
+            background: #fff; 
+        }
+
+        .relative { 
+            position: relative; 
+            overflow: hidden; 
+            height: 800px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            background: #fff; 
+            z-index: 10; 
+        }
+        #pdfViewer { 
+            width: 100%; 
+            height: 600px; 
+            background: #fff; 
+            position: relative; 
+            z-index: 11; 
+            overflow-y: auto; /* Enable vertical scrollbar */
+        }
+        .pdf-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            z-index: 10;
+        }
+        canvas { 
+            margin: 0 auto; 
+            display: block; 
+            background: #fff !important; 
+            position: relative;
+            z-index: 12;
+            border-bottom: 1px solid #ddd; /* Add a separator between pages */
+            margin-bottom: 10px;
+        }
+        body {
+            position: relative;
+            z-index: 1;
+            background: #ecd69f;
+        }
+        header {
+            z-index: 50;
+        }
+        main {
+            position: relative;
+            z-index: 5;
+        }
+        #pageInfo {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        .dark #pageInfo {
+            background: rgba(0, 0, 0, 0.8);
+            color: #ecd69f;
+        }
+    </style>
+</head>
+<body class="bg-[#ecd69f] min-h-screen">
+    <header class="sticky top-0 z-50 bg-[#ecd69f] shadow-md">
+        <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="index.html" class="font-['Pacifico'] text-2xl text-[#333]">ReadMind</a>
+            </div>
+            <a href="books.html" class="text-[#333]">Books</a>
+            <a href="library.html" class="text-[#333]">Library</a>
+            <a href="progress.html" class="text-[#333]">Progress</a>
+            <div class="dropdown">
+                <label class="btn btn-solid-primary my-2" tabindex="0">Features</label>
+                <div class="dropdown-menu dropdown-menu-bottom-right border border-gray-10">
+                    <a class="dropdown-item text-sm" data-action="addNote">Add note</a>
+                    <a class="dropdown-item text-sm" data-action="aiWord">AI Word</a>
+                    <a class="dropdown-item text-sm" data-action="aiSummarize">AI Summarization</a>
+                    <a class="dropdown-item text-sm" data-action="mcq">MCQ</a>
+                    <a class="dropdown-item text-sm" data-action="flashCards">Flash Cards</a>
+                </div>
+            </div>
+            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center"><i class="ri-moon-line ri-xl"></i></button>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg p-8 shadow-lg relative">
+            <h2 class="text-2xl font-bold mb-4">Book Viewer</h2>
+            <div id="pageInfo">Page <span id="currentPage">1</span> of <span id="totalPages">1</span></div>
+            <div class="relative">
+                <div id="pdfViewer" class="w-full">
+                    <div class="pdf-background"></div>
+                </div>
+            </div>
+            <div id="notes-panel" class="notes-panel">
+                <h3>Saved Notes</h3>
+                <div id="notes-list"></div>
+                <button onclick="toggleNotesPanel()" class="mt-2 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">Toggle Notes</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="contextMenu">
+        <ul>
+            <li data-action="addNote">Add Note</li>
+            <li data-action="aiWord">AI Word</li>
+            <li data-action="aiSummarize">AI Summarization</li>
+            <li data-action="mcq">MCQ</li>
+            <li data-action="flashCards">Flash Cards</li>
+        </ul>
+    </div>
+
+    <div id="aiWindow" class="ai-window">
+        <h3 id="aiWindowTitle"></h3>
+        <div id="aiWindowContent"></div>
+        <button onclick="closeAIWindow()">Close</button>
+    </div>
+
+    <div id="floatingAiSection" class="floating-ai-section">
+        <iframe id="aiIframe" src=""></iframe>
+    </div>
+
+    <div class="nav-buttons">
+        <button id="prevPage" onclick="goToPrevPage()"><i class="ri-arrow-left-s-line"></i></button>
+        <button id="nextPage" onclick="goToNextPage()"><i class="ri-arrow-right-s-line"></i></button>
+    </div>
+
+    <script>
+        const pdfViewer = document.getElementById('pdfViewer');
+        const contextMenu = document.getElementById('contextMenu');
+        const notesList = document.getElementById('notes-list');
+        const notesPanel = document.getElementById('notes-panel');
+        const aiWindow = document.getElementById('aiWindow');
+        const aiWindowTitle = document.getElementById('aiWindowTitle');
+        const aiWindowContent = document.getElementById('aiWindowContent');
+        const floatingAiSection = document.getElementById('floatingAiSection');
+        const aiIframe = document.getElementById('aiIframe');
+        const currentPageSpan = document.getElementById('currentPage');
+        const totalPagesSpan = document.getElementById('totalPages');
+
+        let selectedX = null, selectedY = null;
+        const params = new URLSearchParams(window.location.search);
+        let bookUrl = params.get('book');
+        const notesKey = bookUrl ? `notes_${bookUrl}` : "savedNotes";
+
+        let pdfDoc = null;
+        let currentPage = 1;
+        let totalPages = 0;
+        const scale = 1.5;
+        let useCustomContextMenu = true;
+        let hasSentFullText = false;
+        let selectedTextForSummary = null;
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+
+        async function loadPDF() {
+            try {
+                console.log('Attempting to load PDF with URL:', bookUrl);
+                if (bookUrl && !bookUrl.startsWith('http')) {
+                    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+                    bookUrl = `${baseUrl}/${bookUrl}`;
+                    console.log('Resolved PDF URL:', bookUrl);
+                }
+
+                if (!bookUrl) {
+                    pdfViewer.innerHTML = '<p style="color: red;">No book specified. Add ?book=/path/to/book.pdf to the URL.</p>';
+                    console.error('No book URL provided in query parameters.');
+                    return;
+                }
+
+                pdfViewer.innerHTML = '<p>Loading PDF...</p>';
+                pdfViewer.style.display = 'block';
+                pdfViewer.style.background = '#fff';
+
+                const loadingTask = pdfjsLib.getDocument({ url: bookUrl });
+                pdfDoc = await loadingTask.promise;
+                console.log('PDF loaded successfully. Total pages:', pdfDoc.numPages);
+                totalPages = pdfDoc.numPages;
+                totalPagesSpan.textContent = totalPages;
+                renderAllPages();
+                fetchNotes();
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                pdfViewer.innerHTML = `<p style="color: red;">Failed to load PDF: ${error.message}. Please ensure the file exists and is accessible.</p>`;
+                pdfViewer.style.display = 'block';
+            }
+        }
+
+        loadPDF();
+
+        function renderAllPages() {
+            if (!pdfDoc) {
+                console.error('Cannot render pages: pdfDoc is not loaded.');
+                pdfViewer.innerHTML = '<p style="color: red;">PDF document not loaded.</p>';
+                return;
+            }
+
+            pdfViewer.innerHTML = '<div class="pdf-background"></div>';
+            pdfViewer.style.display = 'block';
+
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                renderPage(pageNum);
+            }
+
+            // Update page number on scroll
+            pdfViewer.addEventListener('scroll', updateCurrentPage);
+        }
+
+        function renderPage(num) {
+            pdfDoc.getPage(num).then((page) => {
+                const viewport = page.getViewport({ scale: scale });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.style.border = '1px solid #000';
+                canvas.style.background = '#fff';
+                canvas.dataset.pageNumber = num; // Store page number for scroll detection
+
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+
+                const renderTask = page.render(renderContext);
+                renderTask.promise.then(() => {
+                    console.log('Page rendered successfully:', num);
+                    pdfViewer.appendChild(canvas);
+
+                    // Render text layer for text selection
+                    page.getTextContent().then((textContent) => {
+                        const textLayerDiv = document.createElement('div');
+                        textLayerDiv.className = 'textLayer';
+                        textLayerDiv.style.position = 'absolute';
+                        textLayerDiv.style.top = `${canvas.offsetTop}px`;
+                        textLayerDiv.style.left = `${canvas.offsetLeft}px`;
+                        textLayerDiv.style.width = `${canvas.width}px`;
+                        textLayerDiv.style.height = `${canvas.height}px`;
+                        pdfViewer.appendChild(textLayerDiv);
+
+                        pdfjsLib.renderTextLayer({
+                            textContent: textContent,
+                            container: textLayerDiv,
+                            viewport: viewport,
+                            textDivs: []
+                        }).promise.catch((error) => {
+                            console.error('Error rendering text layer:', error);
+                        });
+                    }).catch((error) => {
+                        console.error('Error getting text content:', error);
+                    });
+                }).catch((error) => {
+                    console.error('Error rendering page:', error);
+                    pdfViewer.innerHTML = `<p style="color: red;">Error rendering page: ${error.message}</p>`;
+                });
+            }).catch((error) => {
+                console.error('Error getting page:', error);
+                pdfViewer.innerHTML = `<p style="color: red;">Error loading page ${num}: ${error.message}</p>`;
+            });
+        }
+
+        function updateCurrentPage() {
+            const canvases = pdfViewer.getElementsByTagName('canvas');
+            let newCurrentPage = 1;
+
+            for (let i = 0; i < canvases.length; i++) {
+                const canvas = canvases[i];
+                const canvasTop = canvas.offsetTop;
+                const canvasBottom = canvasTop + canvas.height;
+                const scrollTop = pdfViewer.scrollTop + 100; // Add a small offset to account for the header
+
+                if (scrollTop >= canvasTop && scrollTop < canvasBottom) {
+                    newCurrentPage = parseInt(canvas.dataset.pageNumber);
+                    break;
+                }
+            }
+
+            currentPage = newCurrentPage;
+            currentPageSpan.textContent = currentPage;
+            console.log('Updated current page:', currentPage);
+        }
+
+        function goToPrevPage() {
+            if (currentPage <= 1) return;
+            currentPage--;
+            scrollToPage(currentPage);
+        }
+
+        function goToNextPage() {
+            if (currentPage >= totalPages) return;
+            currentPage++;
+            scrollToPage(currentPage);
+        }
+
+        function scrollToPage(pageNum) {
+            const canvases = pdfViewer.getElementsByTagName('canvas');
+            if (canvases[pageNum - 1]) {
+                canvases[pageNum - 1].scrollIntoView({ behavior: 'smooth' });
+                currentPage = pageNum;
+                currentPageSpan.textContent = currentPage;
+            }
+        }
+
+        async function extractFullText() {
+            if (!pdfDoc) {
+                console.error('Cannot extract text: pdfDoc is not loaded.');
+                return "";
+            }
+            let fullText = "";
+            try {
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    if (textContent.items.length === 0) {
+                        console.warn(`Page ${i} has no text content.`);
+                        continue;
+                    }
+                    const pageText = textContent.items.map(item => item.str).join(" ");
+                    fullText += pageText + "\n";
+                    console.log(`Extracted text from page ${i}:`, pageText.substring(0, 100) + '...');
+                }
+            } catch (error) {
+                console.error('Error extracting text from PDF:', error);
+                return "";
+            }
+            if (!fullText.trim()) {
+                console.error('Extracted text is empty after processing all pages.');
+                return "";
+            }
+            console.log('Full text extracted successfully:', fullText.substring(0, 100) + '...');
+            return fullText.trim();
+        }
+
+        const featureHandlers = {
+            aiWord: () => {
+                window.open('dict.html', 'Dictionary', 'width=400,height=600') || 
+                alert('Please allow pop-ups for this site.');
+            },
+            addNote: () => {
+                const noteContent = prompt("Enter your note:");
+                if (!noteContent) return;
+                const noteId = `note-${Date.now()}`;
+                const note = {
+                    id: noteId,
+                    x: selectedX || window.innerWidth / 2,
+                    y: selectedY || window.innerHeight / 2,
+                    content: noteContent,
+                    bookUrl: bookUrl
+                };
+                fetch('save_note.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(note)
+                }).then(res => res.json()).then(data => {
+                    if (data.success) {
+                        addNoteMarker(noteId, note.x, note.y, noteContent);
+                        fetchNotes();
+                    } else {
+                        alert('Failed to save note: ' + data.error);
+                    }
+                }).catch(err => {
+                    console.error('Error saving note:', err);
+                    alert('Error saving note.');
+                });
+            },
+            aiSummarize: () => {
+                const selectedText = window.getSelection().toString().trim();
+                console.log('Selected text for summarization:', selectedText);
+                if (!selectedText) {
+                    alert('Please select some text to summarize.');
+                    useCustomContextMenu = false;
+                    return;
+                }
+                selectedTextForSummary = selectedText;
+                floatingAiSection.style.display = 'block';
+                aiIframe.src = 'ai.html';
+                aiIframe.onload = () => {
+                    console.log('Iframe loaded, sending selected text:', selectedTextForSummary);
+                    try {
+                        aiIframe.contentWindow.postMessage({ selectedText: selectedTextForSummary }, '*');
+                    } catch (error) {
+                        console.error('Error sending message to iframe:', error);
+                        alert('Failed to send text to summarization window.');
+                    }
+                };
+                aiIframe.onerror = () => {
+                    console.error('Error loading ai.html in iframe');
+                    alert('Failed to load summarization window.');
+                };
+            },
+            mcq: async () => {
+                const fullText = await extractFullText();
+                if (!fullText) {
+                    alert('No text available to generate MCQs.');
+                    return;
+                }
+                const mcqWindow = window.open('mcq.html', 'MCQWindow', 'width=800,height=600');
+                if (!mcqWindow) {
+                    alert('Please allow pop-ups for this site.');
+                    return;
+                }
+                setTimeout(() => {
+                    mcqWindow.postMessage({ fullText }, '*');
+                    console.log('Sent fullText to MCQ window:', fullText.substring(0, 100) + '...');
+                }, 1000);
+            },
+            flashCards: async () => {
+                const fullText = await extractFullText();
+                if (!fullText) {
+                    alert('No text available to generate Flash Cards.');
+                    return;
+                }
+                console.log('Opening flash.html with fullText:', fullText.substring(0, 100) + '...');
+                const flashWindow = window.open('flash.html', 'FlashWindow', 'width=800,height=600');
+                if (!flashWindow) {
+                    alert('Please allow pop-ups for this site.');
+                    return;
+                }
+                if (!hasSentFullText) {
+                    setTimeout(() => {
+                        flashWindow.postMessage({ fullText }, '*');
+                        console.log('Sent fullText to Flash window:', fullText.substring(0, 100) + '...');
+                        hasSentFullText = true;
+                    }, 1000);
+                }
+                window.addEventListener('message', (e) => {
+                    if (e.data.request === 'sendFullText' && flashWindow) {
+                        console.log('Flash window requested to resend fullText.');
+                        flashWindow.postMessage({ fullText }, '*');
+                        console.log('Resent fullText to Flash window:', fullText.substring(0, 100) + '...');
+                    }
+                });
+            }
+        };
+
+        function handleFeatureClick(e) {
+            const action = e.target.getAttribute('data-action');
+            if (featureHandlers[action]) {
+                featureHandlers[action]();
+            }
+            contextMenu.style.display = 'none';
+        }
+
+        document.querySelectorAll('#contextMenu li').forEach(item => {
+            item.addEventListener('click', handleFeatureClick);
+        });
+
+        document.querySelectorAll('.dropdown-menu a').forEach(item => {
+            item.addEventListener('click', handleFeatureClick);
+        });
+
+        
+
+        function fetchNotes() {
+            fetch('get_notes.php?bookUrl=' + encodeURIComponent(bookUrl))
+                .then(res => res.json())
+                .then(notes => {
+                    notesList.innerHTML = '';
+                    notes.forEach(note => {
+                        const noteItem = document.createElement('div');
+                        noteItem.className = 'note-item';
+                        noteItem.style.display = 'flex';
+                        noteItem.innerHTML = `
+                            <p contenteditable="true" onblur="editNote('${note.id}', this)">${note.content}</p>
+                            <button onclick="deleteNote('${note.id}')">🗑️</button>
+                        `;
+                        notesList.appendChild(noteItem);
+                        addNoteMarker(note.id, note.x, note.y, note.content);
+                    });
+                    console.log('Notes fetched and rendered:', notes);
+                }).catch(err => {
+                    console.error('Error fetching notes:', err);
+                    notesList.innerHTML = '<p style="color: red;">Failed to load notes.</p>';
+                });
+        }
+
+        function editNote(id, element) {
+            const newContent = element.innerText.trim();
+            fetch('edit_note.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, content: newContent })
+            }).then(res => res.json()).then(data => {
+                if (!data.success) {
+                    alert('Failed to edit note: ' + data.error);
+                    fetchNotes();
+                }
+            }).catch(err => {
+                console.error('Error editing note:', err);
+                fetchNotes();
+            });
+        }
+
+        function deleteNote(id) {
+            fetch('delete_note.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            }).then(res => res.json()).then(data => {
+                if (data.success) {
+                    document.getElementById(id)?.remove();
+                    fetchNotes();
+                } else {
+                    alert('Failed to delete note: ' + data.error);
+                }
+            }).catch(err => console.error('Error deleting note:', err));
+        }
+
+        function addNoteMarker(id, x, y, content) {
+            const marker = document.createElement('span');
+            marker.id = id;
+            marker.className = 'note-marker';
+            marker.style.top = `${y}px`;
+            marker.style.left = `${x}px`;
+            marker.style.display = 'block';
+            marker.title = content;
+            marker.textContent = '📍';
+            document.body.appendChild(marker);
+            console.log('Added note marker:', id, 'at position:', x, y);
+        }
+
+        function toggleNotesPanel() {
+            notesPanel.style.display = notesPanel.style.display === 'none' ? 'block' : 'none';
+            console.log('Toggled notes panel. Display:', notesPanel.style.display);
+        }
+
+        function closeAIWindow() {
+            aiWindow.style.display = 'none';
+            console.log('Closed AI window');
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data === 'closeAiSection') {
+                floatingAiSection.style.display = 'none';
+                console.log('Closed floating AI section');
+            } else if (e.data.request === 'resendSelectedText' && selectedTextForSummary) {
+                console.log('Resending selected text to ai.html:', selectedTextForSummary);
+                aiIframe.contentWindow.postMessage({ selectedText: selectedTextForSummary }, '*');
+            }
+        });
+
+        window.addEventListener('contextmenu', (e) => {
+            if (useCustomContextMenu) {
+                e.preventDefault();
+                selectedX = e.pageX;
+                selectedY = e.pageY;
+                contextMenu.style.top = `${selectedY}px`;
+                contextMenu.style.left = `${selectedX}px`;
+                contextMenu.style.display = 'block';
+                console.log('Opened context menu at:', selectedX, selectedY);
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!contextMenu.contains(e.target)) {
+                contextMenu.style.display = 'none';
+                console.log('Closed context menu');
+            }
+        });
+
+        document.addEventListener('selectionchange', () => {
+            const selectedText = window.getSelection().toString().trim();
+            if (selectedText && !useCustomContextMenu) {
+                useCustomContextMenu = true;
+            }
+        });
+
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            darkModeToggle.innerHTML = `<i class="ri-${isDark ? 'sun' : 'moon'}-line ri-xl"></i>`;
+        });
+    </script>
+</body>
+</html>

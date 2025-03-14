@@ -1,0 +1,629 @@
+/* General Styling */
+body {
+    margin: 0;
+    padding: 0;
+    color: #333;
+    background-color: #ECD69F;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+.about {
+    width: 100%;
+    height: 500px;
+    background-color: #ECD69F;
+    color: rgba(0, 0, 0, 0.514);
+}
+.ab-text{
+    justify-content: center;
+    align-items: center;
+}
+.side-text {
+    margin-left: 650px;
+}
+.fixed-navbar{
+
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+    
+}
+.bookmarks {
+    width: 100%;
+    height: 500px;
+    background-color: #ECD69F;
+    color: black;
+}
+
+.contact {
+    width: 100%;
+    height: 500px;
+    background-color: rgba(0, 0, 0, 0.514);
+    color: white;
+}
+
+.Library {
+    width: 100%;
+    height: 500px;
+    background-color: rgba(0, 0, 0, 0.514);
+    color: white;
+}
+.lb
+{
+    display: flex;
+   justify-self: flex-end;
+   align-items: center;
+   padding: 20px;
+}
+
+.about-content {
+    font-weight: bolder;
+    font-size: 30px;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.514);
+    padding: 10px;
+}
+
+.text {
+    font-weight: bolder;
+    font-size: 30px;
+}
+
+.text-image {
+    width: 100px;
+    height: 200px;
+    display: flex;
+    padding-left: 400px;
+}
+
+/* Banner Image */
+.banner {
+    width: 100%;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.banner img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Container Styling */
+#container {
+    width: 1000px;
+    height: 700px;
+    background-color: #ECD69F;
+    padding: 10px;
+    border-radius: 30px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    top: 75px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+/* Header: Flexbox for proper alignment */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+}
+
+/* Logo & Title Container */
+.logo-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Logo Image Styling */
+.logo img {
+    width: 40px;
+    height: 40px;
+}
+
+/* Title Styling */
+h2 {
+    font-size: 20px;
+    margin: 0;
+}
+
+/* Navigation Styles */
+nav ul {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+nav ul li a {
+    color: black;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+}
+/* Reset styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Sticky Navbar */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #333;
+    color: white;
+    padding: 15px 20px;
+    z-index: 1000;
+}
+
+/* Navbar Links */
+.nav-links {
+    list-style: none;
+    display: flex;
+}
+
+.nav-links li {
+    margin: 0 15px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: white;
+    font-size: 16px;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.auth-buttons button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.signup-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.signin-btn {
+    background-color: black;
+    color: white;
+}
+
+/* Center form */
+.form-container {
+    width: 400px;
+    max-width: 90%;
+    margin: 100px auto;
+    background: #6b5b3c;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+/* Form fields */
+input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 5px;
+}
+
+/* Form Submit Button */
+.form-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* Social Login Buttons */
+.social-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin: 5px 0;
+}
+
+.google-btn {
+    background-color: #db4437;
+}
+
+.facebook-btn {
+    background-color: #1877f2;
+}
+
+.github-btn {
+    background-color: #24292e;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        text-align: center;
+    }
+    .auth-buttons {
+        flex-direction: column;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .navbar {
+        padding: 10px;
+    }
+}
+
+
+
+/* Auth Buttons */
+.auth-buttons {
+    display: flex;
+    gap: 20px;
+}
+
+.auth-buttons a {
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.sign-in {
+    background: transparent;
+    color: black;
+    border: 2px solid black;
+}
+
+.sign-up {
+    background: #4CAF50;
+    color: white;
+    border: none;
+}
+
+.sign-in:hover {
+    background: black;
+    color: white;
+}
+
+.sign-up:hover {
+    background: #388E3C;
+}
+
+/* Sticky Navigation Bar */
+.sticky-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sticky-nav ul {
+    display: flex;
+    gap: 20px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sticky-nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.sticky-nav .logo-title {
+    display: flex;
+    align-items: center;/* Navbar Styling */
+    .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #333;
+        padding: 10px 20px;
+        position: fixed;
+        width: 100%;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+    }
+    
+    .navbar .logo a {
+        color: white;
+        text-decoration: none;
+        font-size: 20px;
+        font-weight: bold;
+    }
+    
+    .navbar .nav-links {
+        list-style: none;
+        display: flex;
+    }
+    
+    .navbar .nav-links li {
+        margin: 0 15px;
+    }
+    
+    .navbar .nav-links a {
+        color: white;
+        text-decoration: none;
+        font-size: 16px;
+    }
+    
+    /* Dark Mode Styles */
+    .dark-mode {
+        background-color: #222;
+        color: white;
+    }
+    
+    /* Change navbar to cream color in dark mode */
+    .dark-mode .navbar {
+        background: #f5deb3;  /* Cream color */
+    }
+    
+    .dark-mode .navbar .logo a,
+    .dark-mode .navbar .nav-links a {
+        color: black; /* Dark text for contrast */
+    }
+    
+    .dark-mode #darkModeToggle {
+        background: #444;
+        color: white;
+    }
+    
+    /* Centered Form Styling */
+    .form-container {
+        width: 300px;
+        margin: 120px auto; /* Adjust for navbar */
+        padding: 20px;
+        background: #6b5b3c;
+        border-radius: 10px;
+        text-align: center;
+    }
+    
+    /* Dark Mode Form Container */
+    .dark-mode .form-container {
+        background: #444;
+    }
+    
+    /* Social Login Buttons */
+    button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .google-btn {
+        background-color: #db4437;
+        color: white;
+    }
+    
+    .facebook-btn {
+        background-color: #3b5998;
+        color: white;
+    }
+    
+    .github-btn {
+        background-color: #24292e;
+        color: white;
+    }
+    
+    gap: 10px;
+}
+
+/* Auth Form Container */
+.auth-container {
+    width: 400px;
+    margin: 120px auto; /* Centering */
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.514);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    text-align: center;
+}
+
+.auth-container h2 {
+    margin-bottom: 20px;
+}
+
+/* Input Fields */
+.auth-container form input {
+    width: 90%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Submit Button */
+.auth-container form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.auth-container form button:hover {
+    background-color: #388E3C;
+}
+
+/* Social Login Buttons */
+.social-login {
+    margin-top: 15px;
+}
+
+.social-login button {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.google {
+    background-color: #db4437;
+    color: white;
+}
+
+.google:hover {
+    background-color: #c1351d;
+}
+
+.facebook {
+    background-color: #1877f2;
+    color: white;
+}
+
+.facebook:hover {
+    background-color: #125abf;
+}
+
+.github {
+    background-color: #24292e;
+    color: white;
+}
+
+.github:hover {
+    background-color: #161b22;
+}
+
+.auth-container p {
+    margin-top: 10px;
+}
+
+/* Book Upload Section */
+.book-container {
+    width: 50%;
+    margin: 100px auto;
+    padding: 20px;
+    background: #6b5b3c;
+    border-radius: 10px;
+    text-align: center;
+}
+
+/* Book Upload Button */
+input[type="file"] {
+    display: block;
+    margin: 10px auto;
+}
+
+button {
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+/* Dark Mode */
+.dark-mode {
+    background-color: #121212;
+    color: white;
+}
+
+.dark-mode .book-container {
+    background: #333;
+}
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #333;
+    padding: 10px 20px;
+    color: white;
+    position: sticky;
+    top: 0;
+    width: 100%;
+}
+
+/* User Profile in Navbar */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-info img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+/* Form Styling */
+.form-container {
+    width: 300px;
+    margin: 100px auto;
+    padding: 20px;
+    background: #6b5b3c;
+    border-radius: 10px;
+    text-align: center;
+}
+
+/* Book Upload Section */
+.book-container {
+    width: 50%;
+    margin: 100px auto;
+    padding: 20px;
+    background: #6b5b3c;
+    border-radius: 10px;
+    text-align: center;
+}
+
+/* Dark Mode */
+.dark-mode {
+    background-color: #121212;
+    color: white;
+}
+
+.dark-mode .book-container {
+    background: #333;
+}
+.book-viewer {
+    width: 80%;
+    margin: 50px auto;
+    text-align: center;
+}
+
+.book-viewer iframe {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
