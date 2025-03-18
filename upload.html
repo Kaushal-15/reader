@@ -91,7 +91,7 @@
             background: #fff; 
             position: relative; 
             z-index: 11; 
-            overflow-y: auto; /* Enable vertical scrollbar */
+            overflow-y: auto; 
         }
         .pdf-background {
             position: absolute;
@@ -108,21 +108,18 @@
             background: #fff !important; 
             position: relative;
             z-index: 12;
-            border-bottom: 1px solid #ddd; /* Add a separator between pages */
+            border-bottom: 1px solid #ddd; 
             margin-bottom: 10px;
         }
-        body {
-            position: relative;
-            z-index: 1;
-            background: #ecd69f;
+        .hidden-text-container { 
+            display: none; /* Hidden from user view */
         }
-        header {
-            z-index: 50;
+        .page-div { 
+            white-space: pre-wrap; 
         }
-        main {
-            position: relative;
-            z-index: 5;
-        }
+        body { position: relative; z-index: 1; background: #ecd69f; }
+        header { z-index: 50; }
+        main { position: relative; z-index: 5; }
         #pageInfo {
             position: fixed;
             top: 20px;
@@ -133,10 +130,7 @@
             box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
             z-index: 100;
         }
-        .dark #pageInfo {
-            background: rgba(0, 0, 0, 0.8);
-            color: #ecd69f;
-        }
+        .dark #pageInfo { background: rgba(0, 0, 0, 0.8); color: #ecd69f; }
     </style>
 </head>
 <body class="bg-[#ecd69f] min-h-screen">
@@ -170,6 +164,7 @@
                 <div id="pdfViewer" class="w-full">
                     <div class="pdf-background"></div>
                 </div>
+                <div id="hiddenTextContainer" class="hidden-text-container"></div>
             </div>
             <div id="notes-panel" class="notes-panel">
                 <h3>Saved Notes</h3>
@@ -206,6 +201,7 @@
 
     <script>
         const pdfViewer = document.getElementById('pdfViewer');
+        const hiddenTextContainer = document.getElementById('hiddenTextContainer');
         const contextMenu = document.getElementById('contextMenu');
         const notesList = document.getElementById('notes-list');
         const notesPanel = document.getElementById('notes-panel');
@@ -228,7 +224,7 @@
         const scale = 1.5;
         let useCustomContextMenu = true;
         let hasSentFullText = false;
-        let selectedTextForSummary = null;
+        let extractedParagraphs = []; // Store extracted paragraphs
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
 
@@ -248,20 +244,17 @@
                 }
 
                 pdfViewer.innerHTML = '<p>Loading PDF...</p>';
-                pdfViewer.style.display = 'block';
-                pdfViewer.style.background = '#fff';
-
                 const loadingTask = pdfjsLib.getDocument({ url: bookUrl });
                 pdfDoc = await loadingTask.promise;
                 console.log('PDF loaded successfully. Total pages:', pdfDoc.numPages);
                 totalPages = pdfDoc.numPages;
                 totalPagesSpan.textContent = totalPages;
                 renderAllPages();
+                await extractFullTextByParagraph();
                 fetchNotes();
             } catch (error) {
                 console.error('Error loading PDF:', error);
                 pdfViewer.innerHTML = `<p style="color: red;">Failed to load PDF: ${error.message}. Please ensure the file exists and is accessible.</p>`;
-                pdfViewer.style.display = 'block';
             }
         }
 
@@ -275,13 +268,9 @@
             }
 
             pdfViewer.innerHTML = '<div class="pdf-background"></div>';
-            pdfViewer.style.display = 'block';
-
             for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
                 renderPage(pageNum);
             }
-
-            // Update page number on scroll
             pdfViewer.addEventListener('scroll', updateCurrentPage);
         }
 
@@ -292,29 +281,19 @@
                 const context = canvas.getContext('2d');
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
-                canvas.style.border = '1px solid #000';
-                canvas.style.background = '#fff';
-                canvas.dataset.pageNumber = num; // Store page number for scroll detection
-
-                context.clearRect(0, 0, canvas.width, canvas.height);
-                context.fillStyle = '#ffffff';
-                context.fillRect(0, 0, canvas.width, canvas.height);
+                canvas.dataset.pageNumber = num;
 
                 const renderContext = {
                     canvasContext: context,
                     viewport: viewport
                 };
 
-                const renderTask = page.render(renderContext);
-                renderTask.promise.then(() => {
-                    console.log('Page rendered successfully:', num);
+                page.render(renderContext).promise.then(() => {
                     pdfViewer.appendChild(canvas);
 
-                    // Render text layer for text selection
                     page.getTextContent().then((textContent) => {
                         const textLayerDiv = document.createElement('div');
                         textLayerDiv.className = 'textLayer';
-                        textLayerDiv.style.position = 'absolute';
                         textLayerDiv.style.top = `${canvas.offsetTop}px`;
                         textLayerDiv.style.left = `${canvas.offsetLeft}px`;
                         textLayerDiv.style.width = `${canvas.width}px`;
@@ -326,20 +305,57 @@
                             container: textLayerDiv,
                             viewport: viewport,
                             textDivs: []
-                        }).promise.catch((error) => {
-                            console.error('Error rendering text layer:', error);
                         });
-                    }).catch((error) => {
-                        console.error('Error getting text content:', error);
                     });
-                }).catch((error) => {
-                    console.error('Error rendering page:', error);
-                    pdfViewer.innerHTML = `<p style="color: red;">Error rendering page: ${error.message}</p>`;
                 });
-            }).catch((error) => {
-                console.error('Error getting page:', error);
-                pdfViewer.innerHTML = `<p style="color: red;">Error loading page ${num}: ${error.message}</p>`;
             });
+        }
+
+        async function extractFullTextByParagraph() {
+            if (!pdfDoc) return;
+            extractedParagraphs = [];
+            hiddenTextContainer.innerHTML = '';
+
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                const page = await pdfDoc.getPage(pageNum);
+                const textContent = await page.getTextContent();
+                let pageText = '';
+                let paragraphs = [];
+                let currentParagraph = '';
+
+                textContent.items.forEach((item, index) => {
+                    const str = item.str.trim();
+                    if (str) {
+                        currentParagraph += str + ' ';
+                        const nextItem = textContent.items[index + 1];
+                        if (!nextItem || item.transform[5] - (nextItem?.transform[5] || 0) > 10) {
+                            paragraphs.push(currentParagraph.trim());
+                            pageText += currentParagraph.trim() + '\n\n';
+                            currentParagraph = '';
+                        }
+                    }
+                });
+
+                if (currentParagraph.trim()) {
+                    paragraphs.push(currentParagraph.trim());
+                    pageText += currentParagraph.trim();
+                }
+
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'page-div';
+                pageDiv.dataset.pageNumber = pageNum;
+                pageDiv.innerText = pageText || `Page ${pageNum} (No text extracted)`;
+                hiddenTextContainer.appendChild(pageDiv);
+
+                extractedParagraphs.push({
+                    page: pageNum,
+                    paragraphs: paragraphs.map((para, idx) => ({
+                        text: para,
+                        top: idx * 50 // Approximate Y-position
+                    }))
+                });
+            }
+            console.log('Text extracted by paragraphs:', extractedParagraphs);
         }
 
         function updateCurrentPage() {
@@ -350,7 +366,7 @@
                 const canvas = canvases[i];
                 const canvasTop = canvas.offsetTop;
                 const canvasBottom = canvasTop + canvas.height;
-                const scrollTop = pdfViewer.scrollTop + 100; // Add a small offset to account for the header
+                const scrollTop = pdfViewer.scrollTop + 100;
 
                 if (scrollTop >= canvasTop && scrollTop < canvasBottom) {
                     newCurrentPage = parseInt(canvas.dataset.pageNumber);
@@ -360,7 +376,6 @@
 
             currentPage = newCurrentPage;
             currentPageSpan.textContent = currentPage;
-            console.log('Updated current page:', currentPage);
         }
 
         function goToPrevPage() {
@@ -385,32 +400,14 @@
         }
 
         async function extractFullText() {
-            if (!pdfDoc) {
-                console.error('Cannot extract text: pdfDoc is not loaded.');
-                return "";
-            }
+            if (!pdfDoc) return "";
             let fullText = "";
-            try {
-                for (let i = 1; i <= pdfDoc.numPages; i++) {
-                    const page = await pdfDoc.getPage(i);
-                    const textContent = await page.getTextContent();
-                    if (textContent.items.length === 0) {
-                        console.warn(`Page ${i} has no text content.`);
-                        continue;
-                    }
-                    const pageText = textContent.items.map(item => item.str).join(" ");
-                    fullText += pageText + "\n";
-                    console.log(`Extracted text from page ${i}:`, pageText.substring(0, 100) + '...');
-                }
-            } catch (error) {
-                console.error('Error extracting text from PDF:', error);
-                return "";
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(" ");
+                fullText += pageText + "\n";
             }
-            if (!fullText.trim()) {
-                console.error('Extracted text is empty after processing all pages.');
-                return "";
-            }
-            console.log('Full text extracted successfully:', fullText.substring(0, 100) + '...');
             return fullText.trim();
         }
 
@@ -447,20 +444,47 @@
                 });
             },
             aiSummarize: () => {
-                const selectedText = window.getSelection().toString().trim();
-                console.log('Selected text for summarization:', selectedText);
-                if (!selectedText) {
-                    alert('Please select some text to summarize.');
-                    useCustomContextMenu = false;
+                console.log('AI Summarization triggered at position:', selectedX, selectedY);
+
+                const canvases = pdfViewer.getElementsByTagName('canvas');
+                let clickedPage = currentPage;
+                let clickedParagraph = null;
+
+                for (let i = 0; i < canvases.length; i++) {
+                    const canvas = canvases[i];
+                    const canvasTop = canvas.offsetTop;
+                    const canvasBottom = canvasTop + canvas.height;
+                    if (selectedY >= canvasTop && selectedY <= canvasBottom) {
+                        clickedPage = parseInt(canvas.dataset.pageNumber);
+                        break;
+                    }
+                }
+
+                const pageData = extractedParagraphs.find(p => p.page === clickedPage);
+                if (!pageData || !pageData.paragraphs.length) {
+                    alert('No text available on this page for summarization.');
                     return;
                 }
-                selectedTextForSummary = selectedText;
+
+                clickedParagraph = pageData.paragraphs.reduce((prev, curr) => {
+                    const prevDiff = Math.abs(prev.top - (selectedY - canvases[clickedPage - 1].offsetTop));
+                    const currDiff = Math.abs(curr.top - (selectedY - canvases[clickedPage - 1].offsetTop));
+                    return currDiff < prevDiff ? curr : prev;
+                });
+
+                if (!clickedParagraph.text) {
+                    alert('No paragraph text found at this position.');
+                    return;
+                }
+
+                console.log('Selected paragraph text:', clickedParagraph.text);
+
                 floatingAiSection.style.display = 'block';
                 aiIframe.src = 'ai.html';
                 aiIframe.onload = () => {
-                    console.log('Iframe loaded, sending selected text:', selectedTextForSummary);
+                    console.log('Iframe loaded, sending paragraph text:', clickedParagraph.text);
                     try {
-                        aiIframe.contentWindow.postMessage({ selectedText: selectedTextForSummary }, '*');
+                        aiIframe.contentWindow.postMessage({ selectedText: clickedParagraph.text }, '*');
                     } catch (error) {
                         console.error('Error sending message to iframe:', error);
                         alert('Failed to send text to summarization window.');
@@ -484,7 +508,6 @@
                 }
                 setTimeout(() => {
                     mcqWindow.postMessage({ fullText }, '*');
-                    console.log('Sent fullText to MCQ window:', fullText.substring(0, 100) + '...');
                 }, 1000);
             },
             flashCards: async () => {
@@ -493,7 +516,6 @@
                     alert('No text available to generate Flash Cards.');
                     return;
                 }
-                console.log('Opening flash.html with fullText:', fullText.substring(0, 100) + '...');
                 const flashWindow = window.open('flash.html', 'FlashWindow', 'width=800,height=600');
                 if (!flashWindow) {
                     alert('Please allow pop-ups for this site.');
@@ -502,25 +524,15 @@
                 if (!hasSentFullText) {
                     setTimeout(() => {
                         flashWindow.postMessage({ fullText }, '*');
-                        console.log('Sent fullText to Flash window:', fullText.substring(0, 100) + '...');
                         hasSentFullText = true;
                     }, 1000);
                 }
-                window.addEventListener('message', (e) => {
-                    if (e.data.request === 'sendFullText' && flashWindow) {
-                        console.log('Flash window requested to resend fullText.');
-                        flashWindow.postMessage({ fullText }, '*');
-                        console.log('Resent fullText to Flash window:', fullText.substring(0, 100) + '...');
-                    }
-                });
             }
         };
 
         function handleFeatureClick(e) {
             const action = e.target.getAttribute('data-action');
-            if (featureHandlers[action]) {
-                featureHandlers[action]();
-            }
+            if (featureHandlers[action]) featureHandlers[action]();
             contextMenu.style.display = 'none';
         }
 
@@ -531,8 +543,6 @@
         document.querySelectorAll('.dropdown-menu a').forEach(item => {
             item.addEventListener('click', handleFeatureClick);
         });
-
-        
 
         function fetchNotes() {
             fetch('get_notes.php?bookUrl=' + encodeURIComponent(bookUrl))
@@ -550,7 +560,6 @@
                         notesList.appendChild(noteItem);
                         addNoteMarker(note.id, note.x, note.y, note.content);
                     });
-                    console.log('Notes fetched and rendered:', notes);
                 }).catch(err => {
                     console.error('Error fetching notes:', err);
                     notesList.innerHTML = '<p style="color: red;">Failed to load notes.</p>';
@@ -564,14 +573,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, content: newContent })
             }).then(res => res.json()).then(data => {
-                if (!data.success) {
-                    alert('Failed to edit note: ' + data.error);
-                    fetchNotes();
-                }
-            }).catch(err => {
-                console.error('Error editing note:', err);
-                fetchNotes();
-            });
+                if (!data.success) alert('Failed to edit note: ' + data.error);
+            }).catch(err => console.error('Error editing note:', err));
         }
 
         function deleteNote(id) {
@@ -599,28 +602,15 @@
             marker.title = content;
             marker.textContent = '📍';
             document.body.appendChild(marker);
-            console.log('Added note marker:', id, 'at position:', x, y);
         }
 
         function toggleNotesPanel() {
             notesPanel.style.display = notesPanel.style.display === 'none' ? 'block' : 'none';
-            console.log('Toggled notes panel. Display:', notesPanel.style.display);
         }
 
         function closeAIWindow() {
             aiWindow.style.display = 'none';
-            console.log('Closed AI window');
         }
-
-        window.addEventListener('message', (e) => {
-            if (e.data === 'closeAiSection') {
-                floatingAiSection.style.display = 'none';
-                console.log('Closed floating AI section');
-            } else if (e.data.request === 'resendSelectedText' && selectedTextForSummary) {
-                console.log('Resending selected text to ai.html:', selectedTextForSummary);
-                aiIframe.contentWindow.postMessage({ selectedText: selectedTextForSummary }, '*');
-            }
-        });
 
         window.addEventListener('contextmenu', (e) => {
             if (useCustomContextMenu) {
@@ -630,15 +620,11 @@
                 contextMenu.style.top = `${selectedY}px`;
                 contextMenu.style.left = `${selectedX}px`;
                 contextMenu.style.display = 'block';
-                console.log('Opened context menu at:', selectedX, selectedY);
             }
         });
 
         document.addEventListener('click', (e) => {
-            if (!contextMenu.contains(e.target)) {
-                contextMenu.style.display = 'none';
-                console.log('Closed context menu');
-            }
+            if (!contextMenu.contains(e.target)) contextMenu.style.display = 'none';
         });
 
         document.addEventListener('selectionchange', () => {
@@ -653,6 +639,10 @@
             document.body.classList.toggle('dark');
             const isDark = document.body.classList.contains('dark');
             darkModeToggle.innerHTML = `<i class="ri-${isDark ? 'sun' : 'moon'}-line ri-xl"></i>`;
+        });
+
+        window.addEventListener('message', (e) => {
+            if (e.data === 'closeAiSection') floatingAiSection.style.display = 'none';
         });
     </script>
 </body>
