@@ -17,63 +17,122 @@
         textarea { width: 100%; height: 100px; margin-bottom: 10px; }
         .highlight { background-color: yellow; }
         #loading { display: none; margin-top: 10px; }
-        #summaryText, #translatedText { 
+        .summary-box, .translated-box { 
             padding: 10px; 
             border: 1px solid #ddd; 
             border-radius: 5px; 
             background: #f9f9f9; 
             min-height: 50px; 
+            margin-top: 10px;
         }
+        .language-section { margin-top: 20px; }
+        .button-group { display: flex; gap: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="text-xl font-bold">Book Summarizer with Translation</h1>
         <textarea id="bookContent" class="border rounded p-2" placeholder="Selected text will appear here..." readonly></textarea>
-        <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="summarizeText()">Summarize</button>
-
         <div id="loading">Processing summary and translation...</div>
 
-        <h2 class="text-lg font-semibold mt-4">Summary (English):</h2>
-        <p id="summaryText"></p>
-
-        <h2 class="text-lg font-semibold mt-4">Translation (Tamil):</h2>
-        <p id="translatedText"></p>
-
-        <h3 class="text-md font-semibold mt-4">Read Aloud (English Only):</h3>
-        <div class="flex gap-2 mt-2">
-            <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" onclick="readSummary()">Read Aloud</button>
-            <button class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600" onclick="pauseReading()">Pause</button>
-            <button class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onclick="closePage()">Close</button>
+        <!-- English Section -->
+        <div class="language-section">
+            <h2 class="text-lg font-semibold mt-4">Summary (English):</h2>
+            <p id="summaryTextEnglish" class="summary-box"></p>
+            <div class="button-group">
+                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="summarizeText('en')">Summarize</button>
+                <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" onclick="readSummary('en')">Read Aloud</button>
+                <button class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600" onclick="pauseReading()">Pause</button>
+            </div>
         </div>
+
+        <!-- Tamil Section -->
+        <div class="language-section">
+            <h2 class="text-lg font-semibold mt-4">Translation (Tamil):</h2>
+            <p id="summaryTextTamil" class="translated-box"></p>
+            <div class="button-group">
+                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="summarizeText('ta')">Summarize</button>
+                <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" onclick="readSummary('ta')">Read Aloud</button>
+            </div>
+        </div>
+
+        <!-- Hindi Section -->
+        <div class="language-section">
+            <h2 class="text-lg font-semibold mt-4">Translation (Hindi):</h2>
+            <p id="summaryTextHindi" class="translated-box"></p>
+            <div class="button-group">
+                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="summarizeText('hi')">Summarize</button>
+                <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" onclick="readSummary('hi')">Read Aloud</button>
+            </div>
+        </div>
+
+        <!-- Kannada Section -->
+        <div class="language-section">
+            <h2 class="text-lg font-semibold mt-4">Translation (Kannada):</h2>
+            <p id="summaryTextKannada" class="translated-box"></p>
+            <div class="button-group">
+                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="summarizeText('kn')">Summarize</button>
+                <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" onclick="readSummary('kn')">Read Aloud</button>
+            </div>
+        </div>
+
+        <!-- Malayalam Section -->
+        <div class="language-section">
+            <h2 class="text-lg font-semibold mt-4">Translation (Malayalam):</h2>
+            <p id="summaryTextMalayalam" class="translated-box"></p>
+            <div class="button-group">
+                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="summarizeText('ml')">Summarize</button>
+                <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" onclick="readSummary('ml')">Read Aloud</button>
+            </div>
+        </div>
+
+        <!-- Telugu Section -->
+        <div class="language-section">
+            <h2 class="text-lg font-semibold mt-4">Translation (Telugu):</h2>
+            <p id="summaryTextTelugu" class="translated-box"></p>
+            <div class="button-group">
+                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="summarizeText('te')">Summarize</button>
+                <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" onclick="readSummary('te')">Read Aloud</button>
+            </div>
+        </div>
+
+        <button class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-4" onclick="closePage()">Close</button>
     </div>
 
     <script>
-        let fullSummary = "";
+        let summaries = {};
         let isPaused = false;
         let speechUtterance;
         let currentWordIndex = 0;
         let wordsArray = [];
-        let maleVoice = null;
+        let voices = {};
 
         const bookContentTextarea = document.getElementById('bookContent');
-        const summaryTextElement = document.getElementById('summaryText');
-        const translatedTextElement = document.getElementById('translatedText');
+        const summaryElements = {
+            en: document.getElementById('summaryTextEnglish'),
+            ta: document.getElementById('summaryTextTamil'),
+            hi: document.getElementById('summaryTextHindi'),
+            kn: document.getElementById('summaryTextKannada'),
+            ml: document.getElementById('summaryTextMalayalam'),
+            te: document.getElementById('summaryTextTelugu')
+        };
         const loadingDiv = document.getElementById('loading');
 
         function loadVoices() {
-            let voices = speechSynthesis.getVoices();
-            maleVoice = voices.find(voice => voice.name.includes("Male") || voice.name.includes("David") || voice.name.includes("Alex"));
-            if (!maleVoice) {
-                maleVoice = voices.find(voice => voice.lang === "en-US") || voices[0];
-            }
-            console.log('Loaded voices, selected male voice:', maleVoice ? maleVoice.name : 'None');
+            let availableVoices = speechSynthesis.getVoices();
+            voices.en = availableVoices.find(voice => voice.lang === "en-US") || availableVoices[0];
+            voices.ta = availableVoices.find(voice => voice.lang === "ta-IN") || voices.en;
+            voices.hi = availableVoices.find(voice => voice.lang === "hi-IN") || voices.en;
+            voices.kn = availableVoices.find(voice => voice.lang === "kn-IN") || voices.en;
+            voices.ml = availableVoices.find(voice => voice.lang === "ml-IN") || voices.en;
+            voices.te = availableVoices.find(voice => voice.lang === "te-IN") || voices.en;
+            console.log('Loaded voices:', voices);
         }
 
         speechSynthesis.onvoiceschanged = loadVoices;
         window.onload = loadVoices;
 
-        function summarizeText() {
+        function summarizeText(lang) {
             let content = bookContentTextarea.value.trim();
             if (!content) {
                 alert("No text to summarize.");
@@ -81,54 +140,78 @@
             }
 
             loadingDiv.style.display = 'block';
-            summaryTextElement.innerText = '';
-            translatedTextElement.innerText = '';
+            summaryElements[lang].innerText = '';
 
             let sentences = content.match(/[^.!?]+[.!?]+/g) || [content];
             if (sentences.length === 0) {
                 loadingDiv.style.display = 'none';
-                summaryTextElement.innerText = "No valid sentences found to summarize.";
+                summaryElements[lang].innerText = "No valid sentences found to summarize.";
                 return;
             }
 
-            // Take approximately 20% of sentences for the summary, or at least 1 sentence
             const summarySentenceCount = Math.max(1, Math.ceil(sentences.length * 0.2));
             let importantSentences = sentences.slice(0, summarySentenceCount);
-            fullSummary = importantSentences.join(" ");
-            summaryTextElement.innerText = fullSummary;
+            summaries[lang] = importantSentences.join(" ");
 
-            translateToTamil(fullSummary);
+            if (lang === 'en') {
+                summaryElements.en.innerText = summaries.en;
+                translateText(summaries.en, 'ta');
+                translateText(summaries.en, 'hi');
+                translateText(summaries.en, 'kn');
+                translateText(summaries.en, 'ml');
+                translateText(summaries.en, 'te');
+            } else {
+                translateText(content, lang);
+            }
         }
 
-        function readSummary() {
-            if (!fullSummary) {
-                alert("No summary to read!");
+        async function translateText(text, targetLang) {
+            try {
+                let response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`);
+                let data = await response.json();
+                if (data.responseStatus === 200) {
+                    summaries[targetLang] = data.responseData.translatedText;
+                    summaryElements[targetLang].innerText = summaries[targetLang];
+                } else {
+                    summaryElements[targetLang].innerText = `Translation failed: ${data.responseDetails}`;
+                }
+            } catch (error) {
+                console.error(`Translation Error (${targetLang}):`, error);
+                summaryElements[targetLang].innerText = "Translation failed due to a network error.";
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function readSummary(lang) {
+            if (!summaries[lang]) {
+                alert(`No summary available in ${lang === 'en' ? 'English' : lang.toUpperCase()} to read!`);
                 return;
             }
 
             stopReading();
-            wordsArray = fullSummary.split(/\s+/);
+            wordsArray = summaries[lang].split(/\s+/);
             currentWordIndex = 0;
             isPaused = false;
-            speakNextWord();
+            speakNextWord(lang);
         }
 
-        function speakNextWord() {
+        function speakNextWord(lang) {
             if (currentWordIndex >= wordsArray.length || isPaused) return;
 
             let sentenceToSpeak = wordsArray.slice(currentWordIndex).join(" ");
             speechUtterance = new SpeechSynthesisUtterance(sentenceToSpeak);
             speechUtterance.rate = 1.0;
             speechUtterance.pitch = 1.0;
-            speechUtterance.lang = "en-US";
-            if (maleVoice) speechUtterance.voice = maleVoice;
+            speechUtterance.lang = `${lang}-IN` || "en-US";
+            speechUtterance.voice = voices[lang] || voices.en;
 
-            speechUtterance.onstart = () => highlightWords();
+            speechUtterance.onstart = () => highlightWords(lang);
             speechUtterance.onend = () => { if (!isPaused) stopReading(); };
             speechSynthesis.speak(speechUtterance);
         }
 
-        function highlightWords() {
+        function highlightWords(lang) {
             let index = 0;
             let interval = setInterval(() => {
                 if (index >= wordsArray.length || isPaused) {
@@ -138,7 +221,7 @@
                 let highlightedText = wordsArray.map((word, i) => 
                     i === index ? `<span class="highlight">${word}</span>` : word
                 ).join(" ");
-                summaryTextElement.innerHTML = highlightedText;
+                summaryElements[lang].innerHTML = highlightedText;
                 index++;
             }, 300);
         }
@@ -151,24 +234,9 @@
         function stopReading() {
             isPaused = false;
             speechSynthesis.cancel();
-            summaryTextElement.innerHTML = fullSummary;
-        }
-
-        async function translateToTamil(text) {
-            try {
-                let response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ta`);
-                let data = await response.json();
-                if (data.responseStatus === 200) {
-                    translatedTextElement.innerText = data.responseData.translatedText;
-                } else {
-                    translatedTextElement.innerText = `Translation failed: ${data.responseDetails}`;
-                }
-            } catch (error) {
-                console.error("Translation Error:", error);
-                translatedTextElement.innerText = "Translation failed due to a network error. Please try again.";
-            } finally {
-                loadingDiv.style.display = 'none';
-            }
+            Object.keys(summaryElements).forEach(lang => {
+                if (summaries[lang]) summaryElements[lang].innerHTML = summaries[lang];
+            });
         }
 
         function closePage() {
@@ -177,13 +245,12 @@
 
         window.addEventListener('message', (e) => {
             if (e.data && e.data.selectedText) {
-                console.log('Received selected text in ai.html:', e.data.selectedText);
+                console.log('Received paragraph text in ai.html:', e.data.selectedText);
                 bookContentTextarea.value = e.data.selectedText;
-                summarizeText(); // Auto-trigger summarization
+                summarizeText('en'); // Auto-trigger English summarization
             }
         });
 
-        // Request the selected text from the parent if not received
         window.addEventListener('load', () => {
             console.log('ai.html loaded, requesting selected text');
             window.parent.postMessage({ request: 'resendSelectedText' }, '*');
