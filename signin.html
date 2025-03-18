@@ -198,33 +198,37 @@
             document.body.classList.toggle("dark-mode");
             localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
         });
-
+    
         // 🌙 Load Dark Mode Preference
         if (localStorage.getItem("darkMode") === "true") {
             document.body.classList.add("dark-mode");
         }
-
+    
         // 🚀 Handle Sign-Up Form Submission
         document.getElementById("signupForm").addEventListener("submit", function(event) {
             event.preventDefault(); // Prevent form submission
-
-            // Get form values
+    
             const fullName = document.getElementById("fullName").value;
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
-
-            // Store user data in local storage
-            const user = {
-                fullName: fullName,
-                email: email,
-                password: password
-            };
-
-            localStorage.setItem("user", JSON.stringify(user));
-
-            // Redirect to books.html
-            alert("Account created successfully! Redirecting to books...");
-            window.location.href = "books.html";
+    
+            // Send data to signup.php via AJAX
+            fetch("signup.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.status === "success") {
+                    window.location.href = "books.html";
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred. Please try again.");
+            });
         });
     </script>
 
