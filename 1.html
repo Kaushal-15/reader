@@ -1,9 +1,12 @@
  <pre>
-            CREATE TABLE users (
+  CREATE TABLE books (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    full_name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    user_id INT NOT NULL,
+    book_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_pages INT DEFAULT 0,
+    pages_read INT DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
         </pre>
