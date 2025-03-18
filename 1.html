@@ -1,5 +1,18 @@
- <pre>
-  CREATE TABLE books (
+-- Create the database
+CREATE DATABASE IF NOT EXISTS login_system;
+USE login_system;
+
+-- Create the users table
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create the books table with all required columns
+CREATE TABLE books (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     book_name VARCHAR(255) NOT NULL,
@@ -9,4 +22,13 @@
     pages_read INT DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
-        </pre>
+
+-- Insert sample data for testing
+INSERT INTO users (full_name, email, password, created_at) VALUES
+('John Doe', 'john@example.com', '$2y$10$YOUR_HASHED_PASSWORD', '2025-03-01 10:00:00'),
+('Jane Smith', 'jane@example.com', '$2y$10$YOUR_HASHED_PASSWORD', '2025-03-02 12:00:00');
+
+INSERT INTO books (user_id, book_name, file_path, uploaded_at, total_pages, pages_read) VALUES
+(1, 'Book One.pdf', 'uploads/Book One.pdf', '2025-03-10 14:00:00', 300, 150),
+(1, 'Book Two.epub', 'uploads/Book Two.epub', '2025-03-12 09:00:00', 250, 50),
+(2, 'Book Three.mobi', 'uploads/Book Three.mobi', '2025-03-15 16:00:00', 400, 400);
