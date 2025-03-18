@@ -33,6 +33,7 @@
     <main class="container mx-auto px-4 pt-8">
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-8">
+           
                 <div class="bg-white rounded-lg p-8 shadow-lg mt-8">
                     <h2 class="text-2xl font-bold mb-4">Upload New Book</h2>
                     <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
@@ -45,6 +46,7 @@
                 </div>
             </div>
         </div>
+             
         <div class="bg-white rounded-lg p-8 shadow-lg mt-8">
             <h2 class="text-2xl font-bold mb-4">Uploaded Books</h2>
             <ul id="uploadedBooks" class="space-y-2"></ul>
@@ -56,50 +58,15 @@
             const file = e.target.files[0];
             if (file) {
                 document.getElementById('fileName').textContent = `Selected: ${file.name}`;
-                const formData = new FormData();
-                formData.append('bookFile', file);
-
-                fetch('upload_book.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    if (data.status === 'success') addBookToList(data.book_name);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while uploading the book.');
-                });
+                const uploadedList = document.getElementById('uploadedBooks');
+                const listItem = document.createElement('li');
+                listItem.classList.add('flex', 'justify-between', 'items-center', 'p-2', 'border', 'rounded');
+                listItem.innerHTML = `
+                    <span>${file.name}</span>
+                    <a href="upload.html?book=${encodeURIComponent(file.name)}" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Read Now</a>
+                `;
+                uploadedList.appendChild(listItem);
             }
-        });
-
-        function addBookToList(bookName) {
-            const uploadedList = document.getElementById('uploadedBooks');
-            const listItem = document.createElement('li');
-            listItem.classList.add('flex', 'justify-between', 'items-center', 'p-2', 'border', 'rounded');
-            listItem.innerHTML = `
-                <span>${bookName}</span>
-                <a href="upload.html?book=${encodeURIComponent(bookName)}" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Read Now</a>
-            `;
-            uploadedList.appendChild(listItem);
-        }
-
-        window.addEventListener('load', () => {
-            fetch('get_books.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        data.books.forEach(bookName => addBookToList(bookName));
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while fetching books.');
-                });
         });
     </script>
 </body>
