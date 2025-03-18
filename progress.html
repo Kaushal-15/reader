@@ -38,73 +38,29 @@
             cursor: pointer;
             transition: transform 0.2s;
         }
-        .progress-square:hover {
-            transform: scale(1.2);
-        }
-        .progress-square.read {
-            background: #2ea043;
-        }
-        .progress-square.partial {
-            background: #9be9a8;
-        }
-        .progress-square.empty {
-            background: #ebedf0;
-        }
+        .progress-square:hover { transform: scale(1.2); }
+        .progress-square.read { background: #2ea043; }
+        .progress-square.partial { background: #9be9a8; }
+        .progress-square.empty { background: #ebedf0; }
         .book-list {
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .book-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            transition: background 0.2s;
-        }
-        .book-item:hover {
-            background: #f5f5f5;
-        }
-        .book-item:last-child {
-            border-bottom: none;
-        }
-        .progress-bar {
-            height: 8px;
-            border-radius: 4px;
-            background: #ebedf0;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: #2ea043;
-            transition: width 0.3s ease-in-out;
-        }
-        .dark {
-            background: rgba(0, 0, 0, 0.514);
-            color: #ecd69f;
-        }
-        .dark .progress-container,
-        .dark .book-list {
-            background: #2d2d2d;
-            color: #ecd69f;
-        }
-        .dark .progress-grid {
-            background: #383838;
-        }
-        .dark .progress-square.empty {
-            background: #555;
-        }
-        .dark .book-item {
-            border-bottom: 1px solid #444;
-        }
-        .dark .book-item:hover {
-            background: #383838;
-        }
-        .dark .progress-bar {
-            background: #555;
-        }
-        .dark .progress-fill {
-            background: #9be9a8;
-        }
+        .book-item { padding: 10px; border-bottom: 1px solid #eee; transition: background 0.2s; }
+        .book-item:hover { background: #f5f5f5; }
+        .book-item:last-child { border-bottom: none; }
+        .progress-bar { height: 8px; border-radius: 4px; background: #ebedf0; overflow: hidden; }
+        .progress-fill { height: 100%; background: #2ea043; transition: width 0.3s ease-in-out; }
+        .dark { background: rgba(0, 0, 0, 0.514); color: #ecd69f; }
+        .dark .progress-container, .dark .book-list { background: #2d2d2d; color: #ecd69f; }
+        .dark .progress-grid { background: #383838; }
+        .dark .progress-square.empty { background: #555; }
+        .dark .book-item { border-bottom: 1px solid #444; }
+        .dark .book-item:hover { background: #383838; }
+        .dark .progress-bar { background: #555; }
+        .dark .progress-fill { background: #9be9a8; }
     </style>
 </head>
 <body class="bg-[#ecd69f] min-h-screen">
@@ -142,30 +98,23 @@
     </main>
 
     <script>
-        // Sample data - this would typically come from a backend
-        const readingData = {
-            books: [
-                { title: "Book 1", completed: true, pages: 300, pagesRead: 300, startDate: "2025-01-01" },
-                { title: "Book 2", completed: false, pages: 250, pagesRead: 150, startDate: "2025-02-01" },
-                { title: "Book 3", completed: true, pages: 400, pagesRead: 400, startDate: "2025-01-15" }
-            ],
-            dailyProgress: {}
-        };
+        let readingData = { books: [], dailyProgress: {} };
 
         function generateProgressGrid() {
             const grid = document.getElementById('progressGrid');
             const today = new Date();
             const startDate = new Date(today.getFullYear(), 0, 1);
             const daysInYear = 365 + (today.getFullYear() % 4 === 0 ? 1 : 0);
-            
+
             readingData.books.forEach(book => {
-                const start = new Date(book.startDate);
-                const daysToComplete = book.pages / 10;
+                const start = new Date(book.start_date);
+                const daysToComplete = book.total_pages / 10; // Assume 10 pages/day as a simple metric
                 let currentDate = new Date(start);
-                
-                for (let i = 0; i < daysToComplete && i < book.pagesRead / 10; i++) {
+                const pagesPerDay = book.pages_read / daysToComplete;
+
+                for (let i = 0; i < daysToComplete && i < book.pages_read / 10; i++) {
                     const dateStr = currentDate.toISOString().split('T')[0];
-                    readingData.dailyProgress[dateStr] = (readingData.dailyProgress[dateStr] || 0) + 10;
+                    readingData.dailyProgress[dateStr] = (readingData.dailyProgress[dateStr] || 0) + pagesPerDay;
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
             });
@@ -190,14 +139,15 @@
 
         function populateBookList() {
             const bookList = document.getElementById('bookList');
+            bookList.innerHTML = ''; // Clear existing list
             readingData.books.forEach(book => {
-                const percentage = Math.round((book.pagesRead / book.pages) * 100);
+                const percentage = Math.round((book.pages_read / book.total_pages) * 100);
                 const li = document.createElement('li');
                 li.className = 'book-item';
                 li.innerHTML = `
                     <div class="flex justify-between items-center">
                         <span class="font-medium">${book.title}</span>
-                        <span class="text-sm text-gray-600">${book.pagesRead}/${book.pages} pages</span>
+                        <span class="text-sm text-gray-600">${book.pages_read}/${book.total_pages} pages</span>
                     </div>
                     <div class="progress-bar mt-2">
                         <div class="progress-fill" style="width: ${percentage}%"></div>
@@ -208,8 +158,25 @@
             });
         }
 
-        generateProgressGrid();
-        populateBookList();
+        // Fetch books from backend
+        window.addEventListener('load', () => {
+            fetch('get_books.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        readingData.books = data.books;
+                        generateProgressGrid();
+                        populateBookList();
+                    } else {
+                        alert(data.message);
+                        window.location.href = 'login.html'; // Redirect to login if not authenticated
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while fetching progress data.');
+                });
+        });
 
         const darkModeToggle = document.getElementById('darkModeToggle');
         darkModeToggle.addEventListener('click', () => {
