@@ -194,30 +194,37 @@
             document.body.classList.toggle("dark-mode");
             localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
         });
-
+    
         // 🌙 Load Dark Mode Preference
         if (localStorage.getItem("darkMode") === "true") {
             document.body.classList.add("dark-mode");
         }
-
+    
         // 🚀 Handle Login Form Submission
         document.getElementById("loginForm").addEventListener("submit", function(event) {
             event.preventDefault(); // Prevent form submission
-
+    
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
-
-            // Retrieve stored user data
-            const storedUser = JSON.parse(localStorage.getItem("user"));
-
-            if (storedUser && storedUser.email === email && storedUser.password === password) {
-                alert("Login successful! Redirecting to books...");
-                window.location.href = "books.html";
-            } else {
-                alert("Invalid credentials! Please try again.");
-            }
+    
+            // Send data to login.php via AJAX
+            fetch("login.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.status === "success") {
+                    window.location.href = "books.html";
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred. Please try again.");
+            });
         });
     </script>
-
 </body>
 </html>
