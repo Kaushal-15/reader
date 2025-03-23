@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -229,36 +229,44 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
 
         async function loadPDF() {
-            try {
-                console.log('Attempting to load PDF with URL:', bookUrl);
-                if (bookUrl && !bookUrl.startsWith('http')) {
-                    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                    bookUrl = `${baseUrl}/${bookUrl}`;
-                    console.log('Resolved PDF URL:', bookUrl);
-                }
-
-                if (!bookUrl) {
-                    pdfViewer.innerHTML = '<p style="color: red;">No book specified. Add ?book=/path/to/book.pdf to the URL.</p>';
-                    console.error('No book URL provided in query parameters.');
-                    return;
-                }
-
-                pdfViewer.innerHTML = '<p>Loading PDF...</p>';
-                const loadingTask = pdfjsLib.getDocument({ url: bookUrl });
-                pdfDoc = await loadingTask.promise;
-                console.log('PDF loaded successfully. Total pages:', pdfDoc.numPages);
-                totalPages = pdfDoc.numPages;
-                totalPagesSpan.textContent = totalPages;
-                renderAllPages();
-                await extractFullTextByParagraph();
-                fetchNotes();
-            } catch (error) {
-                console.error('Error loading PDF:', error);
-                pdfViewer.innerHTML = `<p style="color: red;">Failed to load PDF: ${error.message}. Please ensure the file exists and is accessible.</p>`;
+        try {
+            console.log('Attempting to load PDF with URL:', bookUrl);
+            if (bookUrl && !bookUrl.startsWith('http')) {
+                const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+                bookUrl = `${baseUrl}/${bookUrl}`;
+                console.log('Resolved PDF URL:', bookUrl);
             }
-        }
 
-        loadPDF();
+            if (!bookUrl) {
+                pdfViewer.innerHTML = '<p style="color: red;">No book specified. Add ?book=/path/to/book.pdf to the URL.</p>';
+                console.error('No book URL provided in query parameters.');
+                return;
+            }
+
+            // Check if the file exists
+            const response = await fetch(bookUrl, { method: 'HEAD' });
+            if (!response.ok) {
+                throw new Error('Book file not found or inaccessible.');
+            }
+
+            pdfViewer.innerHTML = '<p>Loading PDF...</p>';
+            const loadingTask = pdfjsLib.getDocument({ url: bookUrl });
+            pdfDoc = await loadingTask.promise;
+            console.log('PDF loaded successfully. Total pages:', pdfDoc.numPages);
+            totalPages = pdfDoc.numPages;
+            totalPagesSpan.textContent = totalPages;
+            renderAllPages();
+            await extractFullTextByParagraph();
+            fetchNotes();
+        } catch (error) {
+            console.error('Error loading PDF:', error);
+            pdfViewer.innerHTML = `<p style="color: red;">Failed to load PDF: ${error.message}. Please ensure the file exists and is accessible.</p>`;
+        }
+    }
+
+    loadPDF();
+
+
 
         function renderAllPages() {
             if (!pdfDoc) {

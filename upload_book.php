@@ -4,7 +4,7 @@ session_start();
 $host = "localhost";
 $username = "root";
 $password = "";
-$database = "login_system";
+$database = "readmind";
 
 $conn = new mysqli($host, $username, $password, $database);
 

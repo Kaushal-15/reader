@@ -1,15 +1,42 @@
 <?php
-header('Content-Type: application/json');
-require 'db_connect.php';
+session_start();
 
-$data = json_decode(file_get_contents('php://input'), true);
-$noteId = $data['id'];
+$host = "localhost";
+$username = "root";
+$password = "";
+$database = "readmind";
 
-try {
-    $stmt = $pdo->prepare("DELETE FROM notes WHERE id = ?");
-    $stmt->execute([$noteId]);
-    echo json_encode(['success' => true]);
-} catch (PDOException $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+$conn = new mysqli($host, $username, $password, $database);
+
+if ($conn->connect_error) {
+    echo json_encode(["success" => false, "error" => "Database connection failed"]);
+    exit;
 }
+
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(["success" => false, "error" => "User not logged in"]);
+    exit;
+}
+
+$user_id = $_SESSION['user_id'];
+$data = json_decode(file_get_contents("php://input"), true);
+
+if (isset($data['id'])) {
+    $note_id = $data['id'];
+
+    $sql = "DELETE FROM notes WHERE note_id = ? AND user_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("si", $note_id, $user_id);
+
+    if ($stmt->execute()) {
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["success" => false, "error" => "Failed to delete note"]);
+    }
+    $stmt->close();
+} else {
+    echo json_encode(["success" => false, "error" => "Invalid data"]);
+}
+
+$conn->close();
 ?>

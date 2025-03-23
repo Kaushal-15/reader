@@ -116,6 +116,7 @@
             <a href="books.html" class="text-[#333]">Books</a>
             <a href="library.html" class="text-[#333]">Library</a>
             <a href="progress.html" class="text-[#333] font-bold">Progress</a>
+            <a href="logout.php" class="text-[#333]">Logout</a>
             <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center"><i class="ri-moon-line ri-xl"></i></button>
         </nav>
     </header>
@@ -142,25 +143,51 @@
     </main>
 
     <script>
-        // Sample data - this would typically come from a backend
-        const readingData = {
-            books: [
-                { title: "Book 1", completed: true, pages: 300, pagesRead: 300, startDate: "2025-01-01" },
-                { title: "Book 2", completed: false, pages: 250, pagesRead: 150, startDate: "2025-02-01" },
-                { title: "Book 3", completed: true, pages: 400, pagesRead: 400, startDate: "2025-01-15" }
-            ],
+        let readingData = {
+            books: [],
             dailyProgress: {}
         };
 
+        function fetchBooks() {
+            fetch('get_books.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        if (data.books.length === 0) {
+                            document.getElementById('progressGrid').innerHTML = '<p class="text-center text-gray-600">No books found. Start reading to track your progress!</p>';
+                            document.getElementById('bookList').innerHTML = '<p class="text-center text-gray-600">No books found.</p>';
+                            return;
+                        }
+                        readingData.books = data.books.map(book => ({
+                            title: book.title,
+                            completed: book.pages_read >= book.total_pages,
+                            pages: book.total_pages,
+                            pagesRead: book.pages_read,
+                            startDate: book.start_date
+                        }));
+                        generateProgressGrid();
+                        populateBookList();
+                    } else {
+                        alert(data.message);
+                        window.location.href = 'login.html';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching books:', error);
+                    alert('An error occurred while fetching books.');
+                });
+        }
+
         function generateProgressGrid() {
             const grid = document.getElementById('progressGrid');
+            grid.innerHTML = ''; // Clear existing grid
             const today = new Date();
             const startDate = new Date(today.getFullYear(), 0, 1);
             const daysInYear = 365 + (today.getFullYear() % 4 === 0 ? 1 : 0);
             
             readingData.books.forEach(book => {
                 const start = new Date(book.startDate);
-                const daysToComplete = book.pages / 10;
+                const daysToComplete = book.pages / 10; // Assume 10 pages per day
                 let currentDate = new Date(start);
                 
                 for (let i = 0; i < daysToComplete && i < book.pagesRead / 10; i++) {
@@ -190,6 +217,7 @@
 
         function populateBookList() {
             const bookList = document.getElementById('bookList');
+            bookList.innerHTML = ''; // Clear existing list
             readingData.books.forEach(book => {
                 const percentage = Math.round((book.pagesRead / book.pages) * 100);
                 const li = document.createElement('li');
@@ -208,8 +236,8 @@
             });
         }
 
-        generateProgressGrid();
-        populateBookList();
+        // Fetch books when the page loads
+        fetchBooks();
 
         const darkModeToggle = document.getElementById('darkModeToggle');
         darkModeToggle.addEventListener('click', () => {
