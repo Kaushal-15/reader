@@ -14,6 +14,7 @@
             min-height: 100vh;
             font-family: Arial, sans-serif;
             color: #333;
+            transition: background-color 0.3s, color 0.3s;
         }
         .progress-container {
             background: white;
@@ -79,36 +80,48 @@
             transition: width 0.3s ease-in-out;
         }
         .dark {
-            background: rgba(0, 0, 0, 0.514);
+            background: #333;
             color: #ecd69f;
         }
         .dark .progress-container,
         .dark .book-list {
-            background: #2d2d2d;
+            background: #444;
             color: #ecd69f;
         }
         .dark .progress-grid {
-            background: #383838;
+            background: #555;
         }
         .dark .progress-square.empty {
-            background: #555;
+            background: #666;
         }
         .dark .book-item {
-            border-bottom: 1px solid #444;
+            border-bottom: 1px solid #555;
         }
         .dark .book-item:hover {
-            background: #383838;
+            background: #666;
         }
         .dark .progress-bar {
-            background: #555;
+            background: #666;
         }
         .dark .progress-fill {
             background: #9be9a8;
         }
+        .dark .text-gray-600 {
+            color: #ecd69f;
+        }
+        header {
+            background-color: #ecd69f !important;
+        }
+        .dark header {
+            background-color: #444 !important;
+        }
+        .dark a {
+            color: #ecd69f !important;
+        }
     </style>
 </head>
-<body class="bg-[#ecd69f] min-h-screen">
-    <header class="sticky top-0 z-50 bg-[#ecd69f] shadow-md">
+<body class="min-h-screen">
+    <header class="sticky top-0 z-50 shadow-md">
         <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <a href="index.html" class="font-['Pacifico'] text-2xl text-[#333]">ReadMind</a>
@@ -117,15 +130,22 @@
             <a href="library.html" class="text-[#333]">Library</a>
             <a href="progress.html" class="text-[#333] font-bold">Progress</a>
             <a href="logout.php" class="text-[#333]">Logout</a>
-            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center"><i class="ri-moon-line ri-xl"></i></button>
+            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center">
+                <i id="darkModeIcon" class="ri-moon-line ri-xl"></i>
+            </button>
         </nav>
     </header>
 
     <main class="container mx-auto px-4 py-8">
         <div class="progress-container">
-            <h1 class="text-2xl font-bold mb-6 flex items-center">
-                <i class="ri-bar-chart-line mr-2"></i> Reading Progress
-            </h1>
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold flex items-center">
+                    <i class="ri-bar-chart-line mr-2"></i> Reading Progress
+                </h1>
+                <button id="refreshBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
+                    <i class="ri-refresh-line mr-1"></i> Refresh
+                </button>
+            </div>
             <div class="progress-grid" id="progressGrid"></div>
             <div class="mt-4 text-sm text-gray-600 flex justify-center gap-8">
                 <span><span class="inline-block w-3 h-3 bg-[#ebedf0] mr-1"></span> No Activity</span>
@@ -148,51 +168,64 @@
             dailyProgress: {}
         };
 
-        function fetchBooks() {
-            fetch('get_books.php')
+        function fetchProgress() {
+            fetch('get_progress.php')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'success') {
+                    if (data.success) {
                         if (data.books.length === 0) {
-                            document.getElementById('progressGrid').innerHTML = '<p class="text-center text-gray-600">No books found. Start reading to track your progress!</p>';
-                            document.getElementById('bookList').innerHTML = '<p class="text-center text-gray-600">No books found.</p>';
+                            document.getElementById('progressGrid').innerHTML = '<p class="text-center text-gray-600 dark:text-ecd69f">No books found. Start reading to track your progress!</p>';
+                            document.getElementById('bookList').innerHTML = '<p class="text-center text-gray-600 dark:text-ecd69f">No books found.</p>';
                             return;
                         }
                         readingData.books = data.books.map(book => ({
-                            title: book.title,
-                            completed: book.pages_read >= book.total_pages,
-                            pages: book.total_pages,
-                            pagesRead: book.pages_read,
-                            startDate: book.start_date
+                            id: book.bookUrl,
+                            title: book.bookUrl.split('/').pop(), // Extract filename as title
+                            completed: book.pagesRead >= book.totalPages,
+                            pages: book.totalPages,
+                            pagesRead: book.pagesRead,
+                            startDate: book.startDate,
+                            lastReadDate: book.lastReadDate
                         }));
+                        console.log('Fetched progress:', readingData.books);
                         generateProgressGrid();
                         populateBookList();
                     } else {
-                        alert(data.message);
-                        window.location.href = 'login.html';
+                        alert(data.error);
+                        document.getElementById('progressGrid').innerHTML = '<p class="text-center text-gray-600 dark:text-ecd69f">Error loading progress.</p>';
+                        document.getElementById('bookList').innerHTML = '<p class="text-center text-gray-600 dark:text-ecd69f">Error loading progress.</p>';
                     }
                 })
                 .catch(error => {
-                    console.error('Error fetching books:', error);
-                    alert('An error occurred while fetching books.');
+                    console.error('Error fetching progress:', error);
+                    alert('An error occurred while fetching progress.');
                 });
         }
 
         function generateProgressGrid() {
             const grid = document.getElementById('progressGrid');
-            grid.innerHTML = ''; // Clear existing grid
+            grid.innerHTML = '';
             const today = new Date();
             const startDate = new Date(today.getFullYear(), 0, 1);
             const daysInYear = 365 + (today.getFullYear() % 4 === 0 ? 1 : 0);
-            
+
+            readingData.dailyProgress = {};
+
             readingData.books.forEach(book => {
+                if (book.pagesRead <= 0 || !book.startDate) return;
+
                 const start = new Date(book.startDate);
-                const daysToComplete = book.pages / 10; // Assume 10 pages per day
+                const end = new Date(book.lastReadDate || today);
+                const daysSinceStart = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+                if (daysSinceStart <= 0) return;
+
+                const pagesPerDay = book.pagesRead / daysSinceStart;
+
                 let currentDate = new Date(start);
-                
-                for (let i = 0; i < daysToComplete && i < book.pagesRead / 10; i++) {
+                for (let i = 0; i < daysSinceStart; i++) {
                     const dateStr = currentDate.toISOString().split('T')[0];
-                    readingData.dailyProgress[dateStr] = (readingData.dailyProgress[dateStr] || 0) + 10;
+                    readingData.dailyProgress[dateStr] = (readingData.dailyProgress[dateStr] || 0) + pagesPerDay;
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
             });
@@ -201,50 +234,63 @@
                 const date = new Date(startDate);
                 date.setDate(date.getDate() + i);
                 const dateStr = date.toISOString().split('T')[0];
-                
+
                 const square = document.createElement('div');
                 square.className = 'progress-square empty';
-                square.title = `${dateStr}: ${readingData.dailyProgress[dateStr] || 0} pages read`;
-                
+                square.title = `${dateStr}: ${Math.round(readingData.dailyProgress[dateStr] || 0)} pages read`;
+
                 if (readingData.dailyProgress[dateStr]) {
                     square.classList.remove('empty');
                     square.classList.add(readingData.dailyProgress[dateStr] >= 20 ? 'read' : 'partial');
                 }
-                
+
                 grid.appendChild(square);
             }
         }
 
         function populateBookList() {
             const bookList = document.getElementById('bookList');
-            bookList.innerHTML = ''; // Clear existing list
+            bookList.innerHTML = '';
             readingData.books.forEach(book => {
-                const percentage = Math.round((book.pagesRead / book.pages) * 100);
+                const percentage = book.pages > 0 ? Math.round((book.pagesRead / book.pages) * 100) : 0;
                 const li = document.createElement('li');
                 li.className = 'book-item';
                 li.innerHTML = `
                     <div class="flex justify-between items-center">
                         <span class="font-medium">${book.title}</span>
-                        <span class="text-sm text-gray-600">${book.pagesRead}/${book.pages} pages</span>
+                        <span class="text-sm text-gray-600 dark:text-ecd69f">${book.pagesRead}/${book.pages} pages</span>
                     </div>
                     <div class="progress-bar mt-2">
                         <div class="progress-fill" style="width: ${percentage}%"></div>
                     </div>
-                    <div class="text-xs text-gray-500 mt-1">${percentage}% complete</div>
+                    <div class="text-xs text-gray-500 dark:text-ecd69f mt-1">${percentage}% complete</div>
                 `;
                 bookList.appendChild(li);
             });
         }
 
-        // Fetch books when the page loads
-        fetchBooks();
-
+        // Dark/Light Mode Toggle
         const darkModeToggle = document.getElementById('darkModeToggle');
-        darkModeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark');
-            const isDark = document.body.classList.contains('dark');
-            darkModeToggle.innerHTML = `<i class="ri-${isDark ? 'sun' : 'moon'}-line ri-xl"></i>`;
-        });
+        const darkModeIcon = document.getElementById('darkModeIcon');
+
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+            darkModeIcon.className = isDark ? 'ri-sun-line ri-xl' : 'ri-moon-line ri-xl';
+        }
+
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark');
+            darkModeIcon.className = 'ri-sun-line ri-xl';
+        }
+
+        darkModeToggle.addEventListener('click', toggleDarkMode);
+
+        // Refresh Button
+        document.getElementById('refreshBtn').addEventListener('click', fetchProgress);
+
+        // Fetch progress when the page loads
+        fetchProgress();
     </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 async function getWordDefinition(word) {
-    const apiKey = ""; // Replace with your actual Gemini API key
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const apiKey = "AIzaSyDq1FXcYc7meASaWWL933BShx4u5f-ScGQ"; // Replace with your actual Gemini API key
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AIzaSyDq1FXcYc7meASaWWL933BShx4u5f-ScGQ}`;
 
     const requestBody = {
         contents: [{

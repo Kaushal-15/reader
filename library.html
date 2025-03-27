@@ -36,8 +36,42 @@
             transform: translate(-50%, -50%);
             z-index: 1001;
         }
-        .dark #notesPanel {
-            background: #222;
+        .dark {
+            background-color: #333;
+            color: #ecd69f;
+        }
+        .dark .bg-white {
+            background-color: #444;
+            color: #ecd69f;
+        }
+        .dark .text-gray-600 {
+            color: #ecd69f;
+        }
+        .dark .notes-panel,
+        .dark .ai-window,
+        .dark .floating-ai-section {
+            background: #444;
+            color: #ecd69f;
+        }
+        .dark #contextMenu {
+            background: #555;
+            border: 1px solid #666;
+            color: #ecd69f;
+        }
+        .dark #contextMenu li:hover {
+            background: #666;
+        }
+        .dark .note-item {
+            background: #555;
+        }
+        .dark header {
+            background-color: #444 !important;
+        }
+        .dark a, .dark .btn {
+            color: #ecd69f !important;
+        }
+        .dark #pageInfo {
+            background: rgba(0, 0, 0, 0.8);
             color: #ecd69f;
         }
         #notesPanel textarea {
@@ -119,7 +153,7 @@
                 <a href="library.html" class="hover:text-gray-600">Library</a>
                 <a href="books.html" class="hover:text-gray-600">Books</a>
             </div>
-            
+            <a href="logout.php" class="text-[#333]">Logout</a>
             <!-- Dark Mode Toggle -->
             <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center">
                 <i class="ri-sun-line ri-xl"></i>

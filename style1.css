@@ -47,8 +47,3 @@ body {
 #send-btn:hover {
     background-color: #0056b3;
 }
-
-.note-icon {
-    cursor: pointer;
-    margin-left: 10px;
-}

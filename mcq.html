@@ -5,28 +5,132 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MCQs - ReadMind</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #ecd69f; }
-        .mcq-container { max-width: 800px; margin: 0 auto; }
-        .mcq-item { margin-bottom: 20px; }
-        .mcq-question { font-weight: bold; margin-bottom: 10px; }
-        .mcq-option { margin-left: 20px; }
-        .close-btn { position: fixed; top: 10px; right: 10px; }
-        .submit-btn, .refresh-btn { display: block; margin: 20px auto; }
-        .result { margin-top: 20px; padding: 10px; border-radius: 5px; }
-        .result.correct { background-color: #d4edda; color: #155724; }
-        .result.incorrect { background-color: #f8d7da; color: #721c24; }
-        .score { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; }
+        body {
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            background: #ecd69f;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dark {
+            background: #333;
+            color: #ecd69f;
+        }
+        .dark .bg-white {
+            background: #444;
+            color: #ecd69f;
+        }
+        .dark .text-gray-700 {
+            color: #ecd69f;
+        }
+        .dark .bg-gray-100 {
+            background: #555;
+        }
+        .dark .result.correct {
+            background: #2f855a;
+            color: #d4edda;
+        }
+        .dark .result.incorrect {
+            background: #c53030;
+            color: #f8d7da;
+        }
+        .mcq-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .mcq-item {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .dark .mcq-item {
+            background: #444;
+        }
+        .mcq-item:hover {
+            transform: translateY(-2px);
+        }
+        .mcq-question {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .dark .mcq-question {
+            color: #ecd69f;
+        }
+        .mcq-option {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mcq-option input[type="radio"] {
+            accent-color: #4a90e2;
+        }
+        .close-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .submit-btn, .refresh-btn {
+            transition: background-color 0.3s;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .result.correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .result.incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .progress-bar {
+            width: 100%;
+            background: #e0e0e0;
+            border-radius: 5px;
+            height: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4a90e2;
+            transition: width 0.3s ease-in-out;
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen">
     <div class="mcq-container">
-        <h1 class="text-2xl font-bold mb-4">Multiple Choice Questions</h1>
-        <button id="refreshBtn" class="refresh-btn bg-green-500 text-white px-4 py-2 rounded">Refresh Questions</button>
-        <div id="mcqList"></div>
-        <button id="submitBtn" class="submit-btn bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600" disabled>Submit Answers</button>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-ecd69f">Multiple Choice Questions</h1>
+            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center">
+                <i id="darkModeIcon" class="ri-moon-line ri-xl"></i>
+            </button>
+        </div>
+        <button id="refreshBtn" class="refresh-btn bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition mb-6">Refresh Questions</button>
+        <div class="progress-bar">
+            <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+        </div>
+        <div id="mcqList" class="space-y-4"></div>
+        <button id="submitBtn" class="submit-btn bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition mt-6 w-full disabled:opacity-50 disabled:cursor-not-allowed" disabled>Submit Answers</button>
         <div id="resultContainer" class="result hidden"></div>
-        <button class="close-btn bg-red-500 text-white px-4 py-2 rounded" onclick="window.close()">Close</button>
+        <button class="close-btn bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition" onclick="window.close()">Close</button>
     </div>
 
     <script>
@@ -34,14 +138,36 @@
         const submitBtn = document.getElementById('submitBtn');
         const resultContainer = document.getElementById('resultContainer');
         const refreshBtn = document.getElementById('refreshBtn');
+        const progressFill = document.getElementById('progressFill');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const darkModeIcon = document.getElementById('darkModeIcon');
+
         let mcqs = [];
         let userAnswers = {};
-        let desiredQuestionCount = 10; // Default number of questions
+        let desiredQuestionCount = 10;
+
+        // Dark/Light Mode Toggle
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+            darkModeIcon.className = isDark ? 'ri-sun-line ri-xl' : 'ri-moon-line ri-xl';
+        }
+
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark');
+            darkModeIcon.className = 'ri-sun-line ri-xl';
+        }
+
+        darkModeToggle.addEventListener('click', toggleDarkMode);
+
+        // API Key and Endpoint (Replace with your actual API details)
+        const API_KEY = 'AIzaSyDq1FXcYc7meASaWWL933BShx4u5f-ScGQ'; // Replace with your API key
+        const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AIzaSyDq1FXcYc7meASaWWL933BShx4u5f-ScGQ}'; // Replace with your API endpoint
 
         window.addEventListener('message', (e) => {
             if (e.data.fullText) {
                 promptForQuestionCount();
-                generateMCQs(e.data.fullText);
+                fetchMCQsFromAPI(e.data.fullText);
             }
         });
 
@@ -50,6 +176,35 @@
             desiredQuestionCount = Math.min(30, Math.max(1, parseInt(userInput) || 10));
         }
 
+        async function fetchMCQsFromAPI(text) {
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        questionCount: desiredQuestionCount
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch MCQs from API');
+                }
+
+                mcqs = await response.json();
+                userAnswers = {}; // Reset previous answers
+                displayMCQs();
+            } catch (error) {
+                console.error('Error fetching MCQs:', error);
+                alert('Failed to fetch MCQs. Falling back to local generation.');
+                generateMCQsLocally(text); // Fallback to local generation
+            }
+        }
+
+        // Fallback local MCQ generation (same as before)
         function extractKeywords(sentence) {
             const stopWords = ['a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
             const words = sentence
@@ -81,10 +236,10 @@
             return distractors.slice(0, 3);
         }
 
-        function generateMCQs(text) {
+        function generateMCQsLocally(text) {
             const sentences = text.split('.').filter(s => s.trim().length > 20);
             mcqs = [];
-            userAnswers = {}; // Reset previous answers
+            userAnswers = {};
 
             for (let i = 0; i < Math.min(desiredQuestionCount, sentences.length); i++) {
                 const sentence = sentences[i].trim();
@@ -117,7 +272,7 @@
                     ${mcq.options.map((option, i) => `
                         <div class="mcq-option">
                             <input type="radio" name="q${index}" id="q${index}o${i}" value="${option}" onchange="updateAnswer(${index}, this.value)">
-                            <label for="q${index}o${i}">${String.fromCharCode(97 + i)}. ${option}</label>
+                            <label for="q${index}o${i}" class="text-gray-700 dark:text-ecd69f">${String.fromCharCode(97 + i)}. ${option}</label>
                         </div>
                     `).join('')}
                 `;
@@ -130,10 +285,17 @@
         function updateAnswer(questionIndex, selectedOption) {
             userAnswers[questionIndex] = selectedOption;
             checkAllAnswered();
+            updateProgress();
         }
 
         function checkAllAnswered() {
             submitBtn.disabled = Object.keys(userAnswers).length !== mcqs.length;
+        }
+
+        function updateProgress() {
+            const answeredCount = Object.keys(userAnswers).length;
+            const progressPercentage = (answeredCount / mcqs.length) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
         }
 
         function calculateScore() {
@@ -149,14 +311,14 @@
 
         function displayResults(score, results) {
             resultContainer.innerHTML = `
-                <div class="score">Score: ${score} / ${mcqs.length}</div>
-                <div class="percentage">Percentage: ${(score / mcqs.length * 100).toFixed(2)}%</div>
+                <div class="score text-gray-800 dark:text-ecd69f">Score: ${score} / ${mcqs.length}</div>
+                <div class="percentage text-gray-600 dark:text-ecd69f mb-4">Percentage: ${(score / mcqs.length * 100).toFixed(2)}%</div>
                 ${results.map((result, index) => `
                     <div class="result ${result.isCorrect ? 'correct' : 'incorrect'}">
-                        <p><strong>${index + 1}. ${result.question}</strong></p>
-                        <p>Your Answer: ${result.userAnswer}</p>
-                        <p>Correct Answer: ${result.correctAnswer}</p>
-                        <p>${result.isCorrect ? 'Correct!' : 'Incorrect'}</p>
+                        <p class="font-semibold">${index + 1}. ${result.question}</p>
+                        <p class="text-sm">Your Answer: ${result.userAnswer}</p>
+                        <p class="text-sm">Correct Answer: ${result.correctAnswer}</p>
+                        <p class="text-sm font-medium">${result.isCorrect ? 'Correct!' : 'Incorrect'}</p>
                     </div>
                 `).join('')}
             `;
@@ -170,7 +332,6 @@
         });
 
         refreshBtn.addEventListener('click', () => location.reload());
-
     </script>
 </body>
 </html>

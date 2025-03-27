@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9,51 +9,182 @@
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@v5.0.0/dist/tesseract.min.js"></script>
     <style>
+        /* Existing styles remain unchanged */
         .textLayer {
             position: absolute;
-            pointer-events: auto;
-            background: none;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 2;
+            color: transparent;
         }
+
         .textLayer > div {
             position: absolute;
             white-space: pre;
             cursor: text;
-            background: none;
+            transform-origin: 0 0;
+            z-index: 2;
         }
-        .dark { background-color: rgba(0, 0, 0, 0.514); color: #ecd69f; }
-        .dark .bg-white { background-color: #ecd69f; color: rgba(0, 0, 0, 0.514); }
-        .dark .text-gray-600 { color: rgba(0, 0, 0, 0.514); }
+
+        body {
+            background-color: #ecd69f;
+            color: #333;
+        }
+        .bg-white {
+            background-color: #fff;
+            color: #333;
+        }
+        .notes-panel, .ai-window, .floating-ai-section {
+            background: white;
+            color: #333;
+        }
+        #contextMenu {
+            background: #ecd69f;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+        #contextMenu li:hover {
+            background: #f0f0f0;
+        }
+        .note-item {
+            background: #f8f8f8;
+        }
+        header {
+            background-color: #ecd69f !important;
+        }
+        #pageInfo {
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+        }
+
+        .dark {
+            background-color: #333;
+            color: #ecd69f;
+        }
+        .dark .bg-white {
+            background-color: #444;
+            color: #ecd69f;
+        }
+        .dark .text-gray-600 {
+            color: #ecd69f;
+        }
+        .dark .notes-panel,
+        .dark .ai-window,
+        .dark .floating-ai-section {
+            background: #444;
+            color: #ecd69f;
+        }
+        .dark #contextMenu {
+            background: #555;
+            border: 1px solid #666;
+            color: #ecd69f;
+        }
+        .dark #contextMenu li:hover {
+            background: #666;
+        }
+        .dark .note-item {
+            background: #555;
+        }
+        .dark header {
+            background-color: #444 !important;
+        }
+        .dark a, .dark .btn {
+            color: #ecd69f !important;
+        }
+        .dark #pageInfo {
+            background: rgba(0, 0, 0, 0.8);
+            color: #ecd69f;
+        }
 
         #contextMenu { 
             position: fixed; 
             display: none; 
-            background: #ecd69f; 
-            border: 1px solid #ddd; 
             box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2); 
             z-index: 1000; 
             padding: 8px; 
             border-radius: 5px; 
         }
         #contextMenu ul { list-style: none; padding: 0; margin: 0; }
-        #contextMenu li { padding: 6px 12px; cursor: pointer; color: #333; }
-        #contextMenu li:hover { background: #f0f0f0; }
+        #contextMenu li { padding: 6px 12px; cursor: pointer; }
 
-        .notes-panel { margin-top: 20px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); z-index: 20; }
-        .dark .notes-panel { background: #333; color: #ecd69f; }
-        .note-item { display: flex; justify-content: space-between; align-items: center; background: #f8f8f8; padding: 5px; margin-bottom: 5px; border-radius: 5px; }
-        .dark .note-item { background: #444; }
-        .note-item p { flex-grow: 1; margin: 0; padding: 3px; cursor: text; }
-        .note-item button { border: none; background: none; cursor: pointer; font-size: 16px; }
+        .notes-panel { 
+            margin-top: 20px; 
+            padding: 10px; 
+            border-radius: 8px; 
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); 
+            z-index: 20; 
+        }
+        .note-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 5px; 
+            margin-bottom: 5px; 
+            border-radius: 5px; 
+        }
+        .note-item p { 
+            flex-grow: 1; 
+            margin: 0; 
+            padding: 3px; 
+            cursor: text; 
+        }
+        .note-item button { 
+            border: none; 
+            background: none; 
+            cursor: pointer; 
+            font-size: 16px; 
+        }
 
-        .note-marker { position: absolute; cursor: pointer; color: red; font-size: 20px; z-index: 100; }
-        .note-marker:hover { color: darkred; }
+        .note-marker { 
+            position: absolute; 
+            cursor: pointer; 
+            color: red; 
+            font-size: 20px; 
+            z-index: 100; 
+        }
+        .note-marker:hover { 
+            color: darkred; 
+        }
 
-        .ai-window { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; background: white; padding: 20px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); border-radius: 8px; z-index: 1001; display: none; }
+        .ai-window { 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 400px; 
+            padding: 20px; 
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); 
+            border-radius: 8px; 
+            z-index: 1001; 
+            display: none; 
+        }
 
-        .nav-buttons { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 100; }
-        .nav-buttons button { background: rgba(255, 255, 255, 0.8); border: 1px solid #ccc; padding: 10px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); }
-        .nav-buttons button:hover { background: rgba(255, 255, 255, 1); }
+        .nav-buttons { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            display: flex; 
+            gap: 10px; 
+            z-index: 100; 
+        }
+        .nav-buttons button { 
+            background: rgba(255, 255, 255, 0.8); 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); 
+        }
+        .nav-buttons button:hover { 
+            background: rgba(255, 255, 255, 1); 
+        }
 
         .floating-ai-section { 
             position: fixed; 
@@ -61,7 +192,6 @@
             right: 20px; 
             width: 400px; 
             height: 600px; 
-            background: white; 
             padding: 10px; 
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); 
             border-radius: 8px; 
@@ -102,39 +232,47 @@
             background: #fff;
             z-index: 10;
         }
-        canvas { 
-            margin: 0 auto; 
-            display: block; 
-            background: #fff !important; 
+        .page-container {
             position: relative;
-            z-index: 12;
-            border-bottom: 1px solid #ddd; 
             margin-bottom: 10px;
         }
+        canvas {
+            z-index: 1;
+            display: block;
+            margin: 0 auto;
+            background: #fff !important;
+            border-bottom: 1px solid #ddd;
+        }
         .hidden-text-container { 
-            display: none; /* Hidden from user view */
+            display: none; 
         }
         .page-div { 
             white-space: pre-wrap; 
         }
-        body { position: relative; z-index: 1; background: #ecd69f; }
-        header { z-index: 50; }
-        main { position: relative; z-index: 5; }
+        body { 
+            position: relative; 
+            z-index: 1; 
+        }
+        header { 
+            z-index: 50; 
+        }
+        main { 
+            position: relative; 
+            z-index: 5; 
+        }
         #pageInfo {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.8);
             padding: 5px 10px;
             border-radius: 5px;
             box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
             z-index: 100;
         }
-        .dark #pageInfo { background: rgba(0, 0, 0, 0.8); color: #ecd69f; }
     </style>
 </head>
-<body class="bg-[#ecd69f] min-h-screen">
-    <header class="sticky top-0 z-50 bg-[#ecd69f] shadow-md">
+<body class="min-h-screen">
+    <header class="sticky top-0 z-50 shadow-md">
         <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <a href="index.html" class="font-['Pacifico'] text-2xl text-[#333]">ReadMind</a>
@@ -152,7 +290,16 @@
                     <a class="dropdown-item text-sm" data-action="flashCards">Flash Cards</a>
                 </div>
             </div>
-            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center"><i class="ri-moon-line ri-xl"></i></button>
+            <div class="dropdown">
+                <label class="btn btn-solid-primary my-2" tabindex="0">Notes</label>
+                <div class="dropdown-menu dropdown-menu-bottom-right border border-gray-10">
+                    <a class="dropdown-item text-sm" onclick="editNoteByContent()">Edit Note</a>
+                    <a class="dropdown-item text-sm" onclick="deleteNoteByContent()">Delete Note</a>
+                </div>
+            </div>
+            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center">
+                <i id="darkModeIcon" class="ri-moon-line ri-xl"></i>
+            </button>
         </nav>
     </header>
 
@@ -212,6 +359,8 @@
         const aiIframe = document.getElementById('aiIframe');
         const currentPageSpan = document.getElementById('currentPage');
         const totalPagesSpan = document.getElementById('totalPages');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const darkModeIcon = document.getElementById('darkModeIcon');
 
         let selectedX = null, selectedY = null;
         const params = new URLSearchParams(window.location.search);
@@ -224,51 +373,50 @@
         const scale = 1.5;
         let useCustomContextMenu = true;
         let hasSentFullText = false;
-        let extractedParagraphs = []; // Store extracted paragraphs
+        let canvasOffsets = [];
+        let lastReportedPage = 0;
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
 
-        async function loadPDF() {
-        try {
-            console.log('Attempting to load PDF with URL:', bookUrl);
-            if (bookUrl && !bookUrl.startsWith('http')) {
-                const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                bookUrl = `${baseUrl}/${bookUrl}`;
-                console.log('Resolved PDF URL:', bookUrl);
-            }
-
-            if (!bookUrl) {
-                pdfViewer.innerHTML = '<p style="color: red;">No book specified. Add ?book=/path/to/book.pdf to the URL.</p>';
-                console.error('No book URL provided in query parameters.');
-                return;
-            }
-
-            // Check if the file exists
-            const response = await fetch(bookUrl, { method: 'HEAD' });
-            if (!response.ok) {
-                throw new Error('Book file not found or inaccessible.');
-            }
-
-            pdfViewer.innerHTML = '<p>Loading PDF...</p>';
-            const loadingTask = pdfjsLib.getDocument({ url: bookUrl });
-            pdfDoc = await loadingTask.promise;
-            console.log('PDF loaded successfully. Total pages:', pdfDoc.numPages);
-            totalPages = pdfDoc.numPages;
-            totalPagesSpan.textContent = totalPages;
-            renderAllPages();
-            await extractFullTextByParagraph();
-            fetchNotes();
-        } catch (error) {
-            console.error('Error loading PDF:', error);
-            pdfViewer.innerHTML = `<p style="color: red;">Failed to load PDF: ${error.message}. Please ensure the file exists and is accessible.</p>`;
+        // Dark/Light Mode Toggle
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+            darkModeIcon.className = isDark ? 'ri-sun-line ri-xl' : 'ri-moon-line ri-xl';
         }
-    }
 
-    loadPDF();
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark');
+            darkModeIcon.className = 'ri-sun-line ri-xl';
+        }
 
+        darkModeToggle.addEventListener('click', toggleDarkMode);
 
+        async function loadPDF() {
+            try {
+                console.log('Attempting to load PDF with URL:', bookUrl);
+                if (!bookUrl) {
+                    pdfViewer.innerHTML = '<p style="color: red;">No book specified. Add ?book=/path/to/book.pdf to the URL.</p>';
+                    return;
+                }
 
-        function renderAllPages() {
+                const loadingTask = pdfjsLib.getDocument({ url: bookUrl });
+                pdfDoc = await loadingTask.promise;
+                console.log('PDF loaded successfully. Total pages:', pdfDoc.numPages);
+
+                totalPages = pdfDoc.numPages;
+                totalPagesSpan.textContent = totalPages;
+
+                await renderAllPages();
+                fetchNotes(); // Fetch notes after all pages are rendered
+                updateProgress(); // Initial progress update
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                pdfViewer.innerHTML = `<p style="color: red;">Failed to load PDF: ${error.message}</p>`;
+            }
+        }
+
+        async function renderAllPages() {
             if (!pdfDoc) {
                 console.error('Cannot render pages: pdfDoc is not loaded.');
                 pdfViewer.innerHTML = '<p style="color: red;">PDF document not loaded.</p>';
@@ -276,14 +424,19 @@
             }
 
             pdfViewer.innerHTML = '<div class="pdf-background"></div>';
+            canvasOffsets = [];
+            const renderPromises = [];
+
             for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                renderPage(pageNum);
+                renderPromises.push(renderPage(pageNum));
             }
-            pdfViewer.addEventListener('scroll', updateCurrentPage);
+
+            await Promise.all(renderPromises);
+            console.log('All pages rendered.');
         }
 
         function renderPage(num) {
-            pdfDoc.getPage(num).then((page) => {
+            return pdfDoc.getPage(num).then((page) => {
                 const viewport = page.getViewport({ scale: scale });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
@@ -291,99 +444,50 @@
                 canvas.width = viewport.width;
                 canvas.dataset.pageNumber = num;
 
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'page-container';
+                pageContainer.dataset.pageNumber = num;
+                pageContainer.style.position = 'relative';
+                pageContainer.style.marginBottom = '10px';
+                pageContainer.appendChild(canvas);
+
                 const renderContext = {
                     canvasContext: context,
                     viewport: viewport
                 };
 
-                page.render(renderContext).promise.then(() => {
-                    pdfViewer.appendChild(canvas);
+                return page.render(renderContext).promise.then(() => {
+                    pdfViewer.appendChild(pageContainer);
 
-                    page.getTextContent().then((textContent) => {
-                        const textLayerDiv = document.createElement('div');
-                        textLayerDiv.className = 'textLayer';
-                        textLayerDiv.style.top = `${canvas.offsetTop}px`;
-                        textLayerDiv.style.left = `${canvas.offsetLeft}px`;
-                        textLayerDiv.style.width = `${canvas.width}px`;
-                        textLayerDiv.style.height = `${canvas.height}px`;
-                        pdfViewer.appendChild(textLayerDiv);
-
-                        pdfjsLib.renderTextLayer({
-                            textContent: textContent,
-                            container: textLayerDiv,
-                            viewport: viewport,
-                            textDivs: []
-                        });
-                    });
+                    const rect = canvas.getBoundingClientRect();
+                    canvasOffsets[num] = {
+                        top: rect.top + window.scrollY,
+                        left: rect.left + window.scrollX
+                    };
                 });
             });
         }
 
-        async function extractFullTextByParagraph() {
-            if (!pdfDoc) return;
-            extractedParagraphs = [];
-            hiddenTextContainer.innerHTML = '';
-
-            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                const page = await pdfDoc.getPage(pageNum);
-                const textContent = await page.getTextContent();
-                let pageText = '';
-                let paragraphs = [];
-                let currentParagraph = '';
-
-                textContent.items.forEach((item, index) => {
-                    const str = item.str.trim();
-                    if (str) {
-                        currentParagraph += str + ' ';
-                        const nextItem = textContent.items[index + 1];
-                        if (!nextItem || item.transform[5] - (nextItem?.transform[5] || 0) > 10) {
-                            paragraphs.push(currentParagraph.trim());
-                            pageText += currentParagraph.trim() + '\n\n';
-                            currentParagraph = '';
-                        }
-                    }
-                });
-
-                if (currentParagraph.trim()) {
-                    paragraphs.push(currentParagraph.trim());
-                    pageText += currentParagraph.trim();
-                }
-
-                const pageDiv = document.createElement('div');
-                pageDiv.className = 'page-div';
-                pageDiv.dataset.pageNumber = pageNum;
-                pageDiv.innerText = pageText || `Page ${pageNum} (No text extracted)`;
-                hiddenTextContainer.appendChild(pageDiv);
-
-                extractedParagraphs.push({
-                    page: pageNum,
-                    paragraphs: paragraphs.map((para, idx) => ({
-                        text: para,
-                        top: idx * 50 // Approximate Y-position
-                    }))
-                });
-            }
-            console.log('Text extracted by paragraphs:', extractedParagraphs);
-        }
-
         function updateCurrentPage() {
-            const canvases = pdfViewer.getElementsByTagName('canvas');
+            const containers = pdfViewer.getElementsByClassName('page-container');
             let newCurrentPage = 1;
 
-            for (let i = 0; i < canvases.length; i++) {
-                const canvas = canvases[i];
+            for (let i = 0; i < containers.length; i++) {
+                const container = containers[i];
+                const canvas = container.querySelector('canvas');
                 const canvasTop = canvas.offsetTop;
                 const canvasBottom = canvasTop + canvas.height;
                 const scrollTop = pdfViewer.scrollTop + 100;
 
                 if (scrollTop >= canvasTop && scrollTop < canvasBottom) {
-                    newCurrentPage = parseInt(canvas.dataset.pageNumber);
+                    newCurrentPage = parseInt(container.dataset.pageNumber);
                     break;
                 }
             }
 
             currentPage = newCurrentPage;
             currentPageSpan.textContent = currentPage;
+            updateProgress();
         }
 
         function goToPrevPage() {
@@ -399,11 +503,12 @@
         }
 
         function scrollToPage(pageNum) {
-            const canvases = pdfViewer.getElementsByTagName('canvas');
-            if (canvases[pageNum - 1]) {
-                canvases[pageNum - 1].scrollIntoView({ behavior: 'smooth' });
+            const containers = pdfViewer.getElementsByClassName('page-container');
+            if (containers[pageNum - 1]) {
+                containers[pageNum - 1].scrollIntoView({ behavior: 'smooth' });
                 currentPage = pageNum;
                 currentPageSpan.textContent = currentPage;
+                updateProgress();
             }
         }
 
@@ -419,6 +524,48 @@
             return fullText.trim();
         }
 
+        async function performOCR(pageNum, x, y) {
+            const container = document.querySelector(`.page-container[data-page-number="${pageNum}"]`);
+            const canvas = container.querySelector('canvas');
+            if (!canvas) {
+                console.error(`Canvas for page ${pageNum} not found.`);
+                return "";
+            }
+
+            const { data: { text } } = await Tesseract.recognize(
+                canvas,
+                'eng',
+                { rectangle: { top: y - 50, left: x - 50, width: 100, height: 100 } }
+            );
+            console.log(`OCR text extracted from page ${pageNum}:`, text);
+            return text.trim();
+        }
+
+        function updateProgress() {
+            if (!totalPages || currentPage === lastReportedPage) return;
+            lastReportedPage = currentPage;
+
+            const progressData = {
+                bookUrl: bookUrl,
+                pagesRead: currentPage,
+                totalPages: totalPages,
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            fetch('save_progress.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(progressData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Failed to save progress:', data.error);
+                }
+            })
+            .catch(err => console.error('Error saving progress:', err));
+        }
+
         const featureHandlers = {
             aiWord: () => {
                 window.open('dict.html', 'Dictionary', 'width=400,height=600') || 
@@ -427,21 +574,25 @@
             addNote: () => {
                 const noteContent = prompt("Enter your note:");
                 if (!noteContent) return;
+
                 const noteId = `note-${Date.now()}`;
+                const pageOffset = canvasOffsets[currentPage] || { top: 0, left: 0 };
                 const note = {
                     id: noteId,
-                    x: selectedX || window.innerWidth / 2,
-                    y: selectedY || window.innerHeight / 2,
+                    x: selectedX - pageOffset.left,
+                    y: selectedY - pageOffset.top,
                     content: noteContent,
-                    bookUrl: bookUrl
+                    bookUrl: bookUrl,
+                    pageNum: currentPage
                 };
+
                 fetch('save_note.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(note)
                 }).then(res => res.json()).then(data => {
                     if (data.success) {
-                        addNoteMarker(noteId, note.x, note.y, noteContent);
+                        addNoteMarker(noteId, note.x, note.y, noteContent, note.pageNum);
                         fetchNotes();
                     } else {
                         alert('Failed to save note: ' + data.error);
@@ -451,48 +602,35 @@
                     alert('Error saving note.');
                 });
             },
-            aiSummarize: () => {
+            aiSummarize: async () => {
                 console.log('AI Summarization triggered at position:', selectedX, selectedY);
 
-                const canvases = pdfViewer.getElementsByTagName('canvas');
+                const containers = pdfViewer.getElementsByClassName('page-container');
                 let clickedPage = currentPage;
-                let clickedParagraph = null;
 
-                for (let i = 0; i < canvases.length; i++) {
-                    const canvas = canvases[i];
+                for (let i = 0; i < containers.length; i++) {
+                    const container = containers[i];
+                    const canvas = container.querySelector('canvas');
                     const canvasTop = canvas.offsetTop;
                     const canvasBottom = canvasTop + canvas.height;
                     if (selectedY >= canvasTop && selectedY <= canvasBottom) {
-                        clickedPage = parseInt(canvas.dataset.pageNumber);
+                        clickedPage = parseInt(container.dataset.pageNumber);
                         break;
                     }
                 }
 
-                const pageData = extractedParagraphs.find(p => p.page === clickedPage);
-                if (!pageData || !pageData.paragraphs.length) {
-                    alert('No text available on this page for summarization.');
+                const ocrText = await performOCR(clickedPage, selectedX - canvasOffsets[clickedPage].left, selectedY - canvasOffsets[clickedPage].top);
+                if (!ocrText) {
+                    alert('No text could be extracted from the selected area.');
                     return;
                 }
-
-                clickedParagraph = pageData.paragraphs.reduce((prev, curr) => {
-                    const prevDiff = Math.abs(prev.top - (selectedY - canvases[clickedPage - 1].offsetTop));
-                    const currDiff = Math.abs(curr.top - (selectedY - canvases[clickedPage - 1].offsetTop));
-                    return currDiff < prevDiff ? curr : prev;
-                });
-
-                if (!clickedParagraph.text) {
-                    alert('No paragraph text found at this position.');
-                    return;
-                }
-
-                console.log('Selected paragraph text:', clickedParagraph.text);
 
                 floatingAiSection.style.display = 'block';
                 aiIframe.src = 'ai.html';
                 aiIframe.onload = () => {
-                    console.log('Iframe loaded, sending paragraph text:', clickedParagraph.text);
+                    console.log('Iframe loaded, sending OCR text:', ocrText);
                     try {
-                        aiIframe.contentWindow.postMessage({ selectedText: clickedParagraph.text }, '*');
+                        aiIframe.contentWindow.postMessage({ selectedText: ocrText }, '*');
                     } catch (error) {
                         console.error('Error sending message to iframe:', error);
                         alert('Failed to send text to summarization window.');
@@ -548,25 +686,21 @@
             item.addEventListener('click', handleFeatureClick);
         });
 
-        document.querySelectorAll('.dropdown-menu a').forEach(item => {
+        document.querySelectorAll('.dropdown-menu a[data-action]').forEach(item => {
             item.addEventListener('click', handleFeatureClick);
         });
 
         function fetchNotes() {
+            console.log('Fetching notes for book:', bookUrl);
             fetch('get_notes.php?bookUrl=' + encodeURIComponent(bookUrl))
                 .then(res => res.json())
                 .then(notes => {
+                    console.log('Fetched notes:', notes);
                     notesList.innerHTML = '';
+                    document.querySelectorAll('.note-marker').forEach(marker => marker.remove());
                     notes.forEach(note => {
-                        const noteItem = document.createElement('div');
-                        noteItem.className = 'note-item';
-                        noteItem.style.display = 'flex';
-                        noteItem.innerHTML = `
-                            <p contenteditable="true" onblur="editNote('${note.id}', this)">${note.content}</p>
-                            <button onclick="deleteNote('${note.id}')">🗑️</button>
-                        `;
-                        notesList.appendChild(noteItem);
-                        addNoteMarker(note.id, note.x, note.y, note.content);
+                        console.log('Adding note marker:', note);
+                        addNoteMarker(note.note_id, note.x, note.y, note.content, note.page_num || 1);
                     });
                 }).catch(err => {
                     console.error('Error fetching notes:', err);
@@ -574,42 +708,137 @@
                 });
         }
 
-        function editNote(id, element) {
-            const newContent = element.innerText.trim();
+        function editNote(noteId, element) {
+            const newContent = element.textContent.trim();
             fetch('edit_note.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, content: newContent })
-            }).then(res => res.json()).then(data => {
-                if (!data.success) alert('Failed to edit note: ' + data.error);
-            }).catch(err => console.error('Error editing note:', err));
+                body: JSON.stringify({ id: noteId, content: newContent })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const marker = document.getElementById(noteId);
+                        if (marker) {
+                            marker.title = newContent;
+                        }
+                        alert("Note updated successfully.");
+                    } else {
+                        alert("Failed to edit note: " + data.error);
+                    }
+                })
+                .catch(err => console.error("Error editing note:", err));
         }
 
-        function deleteNote(id) {
+        function deleteNote(noteId) {
             fetch('delete_note.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id })
-            }).then(res => res.json()).then(data => {
-                if (data.success) {
-                    document.getElementById(id)?.remove();
-                    fetchNotes();
-                } else {
-                    alert('Failed to delete note: ' + data.error);
-                }
-            }).catch(err => console.error('Error deleting note:', err));
+                body: JSON.stringify({ id: noteId })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById(`note-item-${noteId}`)?.remove();
+                        document.getElementById(noteId)?.remove();
+                        alert("Note deleted successfully.");
+                    } else {
+                        alert("Failed to delete note: " + data.error);
+                    }
+                })
+                .catch(err => console.error("Error deleting note:", err));
         }
 
-        function addNoteMarker(id, x, y, content) {
+        function editNoteByContent() {
+            const noteContent = prompt("Enter the content of the note to edit:");
+            if (!noteContent) return;
+
+            const noteElement = Array.from(notesList.children).find(note => 
+                note.querySelector('p').textContent.trim() === noteContent.trim()
+            );
+
+            if (!noteElement) {
+                alert("Note not found.");
+                return;
+            }
+
+            const newContent = prompt("Enter the new content for the note:", noteContent);
+            if (!newContent) return;
+
+            const noteId = noteElement.id.replace('note-item-', '');
+            fetch('edit_note.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: noteId, content: newContent })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        noteElement.querySelector('p').textContent = newContent;
+                        const marker = document.getElementById(noteId);
+                        if (marker) {
+                            marker.title = newContent;
+                        }
+                        alert("Note updated successfully.");
+                    } else {
+                        alert("Failed to edit note: " + data.error);
+                    }
+                })
+                .catch(err => console.error("Error editing note:", err));
+        }
+
+        function deleteNoteByContent() {
+            const noteContent = prompt("Enter the content of the note to delete:");
+            if (!noteContent) return;
+
+            const noteElement = Array.from(notesList.children).find(note => 
+                note.querySelector('p').textContent.trim() === noteContent.trim()
+            );
+
+            if (!noteElement) {
+                alert("Note not found.");
+                return;
+            }
+
+            const noteId = noteElement.id.replace('note-item-', '');
+            fetch('delete_note.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: noteId })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        noteElement.remove();
+                        document.getElementById(noteId)?.remove();
+                        alert("Note deleted successfully.");
+                    } else {
+                        alert("Failed to delete note: " + data.error);
+                    }
+                })
+                .catch(err => console.error("Error deleting note:", err));
+        }
+
+        function addNoteMarker(noteId, x, y, content, pageNum) {
+            console.log(`Adding note marker for page ${pageNum} at (${x}, ${y})`);
+            const pageContainer = document.querySelector(`.page-container[data-page-number="${pageNum}"]`);
+            if (!pageContainer) {
+                console.error(`Page container for page ${pageNum} not found.`);
+                return;
+            }
+
             const marker = document.createElement('span');
-            marker.id = id;
+            marker.id = noteId;
             marker.className = 'note-marker';
+            marker.style.position = 'absolute';
             marker.style.top = `${y}px`;
             marker.style.left = `${x}px`;
             marker.style.display = 'block';
             marker.title = content;
             marker.textContent = '📍';
-            document.body.appendChild(marker);
+
+            pageContainer.appendChild(marker);
+            console.log(`Note marker ${noteId} added to page ${pageNum}`);
         }
 
         function toggleNotesPanel() {
@@ -642,16 +871,13 @@
             }
         });
 
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        darkModeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark');
-            const isDark = document.body.classList.contains('dark');
-            darkModeToggle.innerHTML = `<i class="ri-${isDark ? 'sun' : 'moon'}-line ri-xl"></i>`;
-        });
-
         window.addEventListener('message', (e) => {
             if (e.data === 'closeAiSection') floatingAiSection.style.display = 'none';
         });
+
+        pdfViewer.addEventListener('scroll', updateCurrentPage);
+
+        window.onload = loadPDF;
     </script>
 </body>
 </html>

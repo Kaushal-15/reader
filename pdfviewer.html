@@ -9,141 +9,263 @@
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
     <style>
         .textLayer {
             position: absolute;
+            top: 0;
+            left: 0;
             pointer-events: auto;
+            z-index: 2;
+            color: transparent;
         }
         .textLayer > div {
             position: absolute;
             white-space: pre;
             cursor: text;
+            transform-origin: 0 0;
+            z-index: 2;
         }
-        .dark { background-color: rgba(0, 0, 0, 0.514); color: #ecd69f; }
-        .dark .bg-white { background-color: #ecd69f; color: rgba(0, 0, 0, 0.514); }
-        .dark .text-gray-600 { color: rgba(0, 0, 0, 0.514); }
-
+        body {
+            background-color: #ecd69f;
+            color: #333;
+        }
+        .bg-white {
+            background-color: #fff;
+            color: #333;
+        }
+        .notes-panel, .ai-window, .floating-ai-section {
+            background: white;
+            color: #333;
+        }
+        #contextMenu {
+            background: #ecd69f;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+        #contextMenu li:hover {
+            background: #f0f0f0;
+        }
+        .note-item {
+            background: #f8f8f8;
+        }
+        header {
+            background-color: #ecd69f !important;
+        }
+        #pageInfo {
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+        }
+        .dark {
+            background-color: #333;
+            color: #ecd69f;
+        }
+        .dark .bg-white {
+            background-color: #444;
+            color: #ecd69f;
+        }
+        .dark .text-gray-600 {
+            color: #ecd69f;
+        }
+        .dark .notes-panel,
+        .dark .ai-window,
+        .dark .floating-ai-section {
+            background: #444;
+            color: #ecd69f;
+        }
+        .dark #contextMenu {
+            background: #555;
+            border: 1px solid #666;
+            color: #ecd69f;
+        }
+        .dark #contextMenu li:hover {
+            background: #666;
+        }
+        .dark .note-item {
+            background: #555;
+        }
+        .dark header {
+            background-color: #444 !important;
+        }
+        .dark a, .dark .btn {
+            color: #ecd69f !important;
+        }
+        .dark #pageInfo {
+            background: rgba(0, 0, 0, 0.8);
+            color: #ecd69f;
+        }
         #contextMenu { 
             position: fixed; 
             display: none; 
-            background: #ecd69f; 
-            border: 1px solid #ddd; 
             box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2); 
             z-index: 1000; 
             padding: 8px; 
             border-radius: 5px; 
         }
         #contextMenu ul { list-style: none; padding: 0; margin: 0; }
-        #contextMenu li { padding: 6px 12px; cursor: pointer; color: #333; }
-        #contextMenu li:hover { background: #f0f0f0; }
-
-        .floating-panel {
+        #contextMenu li { padding: 6px 12px; cursor: pointer; }
+        .notes-panel { 
             position: fixed;
             top: 50px;
             right: 20px;
             width: 250px;
-            background: white;
             padding: 10px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 8px;
             display: none;
+            z-index: 20; 
         }
-        .note-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f8f8f8;
-            padding: 5px;
-            margin-bottom: 5px;
-            border-radius: 5px;
+        .note-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 5px; 
+            margin-bottom: 5px; 
+            border-radius: 5px; 
         }
-        .note-item p {
-            flex-grow: 1;
-            margin: 0;
-            padding: 3px;
-            cursor: text;
+        .note-item p { 
+            flex-grow: 1; 
+            margin: 0; 
+            padding: 3px; 
+            cursor: text; 
         }
-        .note-item button {
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 16px;
+        .note-item button { 
+            border: none; 
+            background: none; 
+            cursor: pointer; 
+            font-size: 16px; 
         }
-
-        .note-marker {
+        .note-marker { 
+            position: absolute; 
+            cursor: pointer; 
+            color: red; 
+            font-size: 20px; 
+            z-index: 100; 
+        }
+        .note-marker:hover { 
+            color: darkred; 
+        }
+        .ai-window { 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 400px; 
+            padding: 20px; 
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); 
+            border-radius: 8px; 
+            z-index: 1001; 
+            display: none; 
+        }
+        .nav-buttons { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            display: flex; 
+            gap: 10px; 
+            z-index: 100; 
+        }
+        .nav-buttons button { 
+            background: rgba(255, 255, 255, 0.8); 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); 
+        }
+        .nav-buttons button:hover { 
+            background: rgba(255, 255, 255, 1); 
+        }
+        .floating-ai-section { 
+            position: fixed; 
+            top: 50px; 
+            right: 20px; 
+            width: 400px; 
+            height: 600px; 
+            padding: 10px; 
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); 
+            border-radius: 8px; 
+            z-index: 1002; 
+            display: none; 
+        }
+        .floating-ai-section iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            border-radius: 8px; 
+            background: #fff; 
+        }
+        .relative { 
+            position: relative; 
+            overflow: hidden; 
+            height: 800px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            background: #fff; 
+            z-index: 10; 
+        }
+        #pdfViewer { 
+            width: 100%; 
+            height: 600px; 
+            background: #fff; 
+            position: relative; 
+            z-index: 11; 
+            overflow-y: auto; 
+        }
+        .pdf-background {
             position: absolute;
-            cursor: pointer;
-            color: red;
-            font-size: 20px;
-            z-index: 100;
-        }
-        .note-marker:hover { color: darkred; }
-
-        .ai-window {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 400px;
-            background: white;
-            padding: 20px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            z-index: 1001;
-            display: none;
-        }
-
-        .nav-buttons {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 100;
-        }
-        .nav-buttons button {
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        .nav-buttons button:hover {
-            background: rgba(255, 255, 255, 1);
-        }
-
-        .floating-ai-section {
-            position: fixed;
-            top: 50px;
-            right: 20px;
-            width: 400px;
-            height: 600px;
-            background: white;
-            padding: 10px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            z-index: 1002;
-            display: none;
-        }
-        .floating-ai-section iframe {
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            border: none;
-            border-radius: 8px;
+            background: #fff;
+            z-index: 10;
         }
-
-        .relative { position: relative; overflow-y: auto; height: 800px; border: 1px solid #ddd; border-radius: 4px; }
-        #pdfViewer { width: 100%; min-height: 600px; background: #fff; }
-        canvas { margin: 0 auto; display: block; }
+        .page-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        canvas {
+            z-index: 1;
+            display: block;
+            margin: 0 auto;
+            background: #fff !important;
+            border-bottom: 1px solid #ddd;
+        }
+        .hidden-text-container { 
+            display: none; 
+        }
+        .page-div { 
+            white-space: pre-wrap; 
+        }
+        body { 
+            position: relative; 
+            z-index: 1; 
+        }
+        header { 
+            z-index: 50; 
+        }
+        main { 
+            position: relative; 
+            z-index: 5; 
+        }
+        #pageInfo {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
     </style>
 </head>
-<body class="bg-[#ecd69f] min-h-screen">
-    <header class="sticky top-0 z-50 bg-[#ecd69f] shadow-md">
+<body class="min-h-screen">
+    <header class="sticky top-0 z-50 shadow-md">
         <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <a href="index.html" class="font-['Pacifico'] text-2xl text-[#333]">ReadMind</a>
@@ -161,17 +283,31 @@
                     <a class="dropdown-item text-sm" data-action="flashCards">Flash Cards</a>
                 </div>
             </div>
-            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center"><i class="ri-moon-line ri-xl"></i></button>
+            <div class="dropdown">
+                <label class="btn btn-solid-primary my-2" tabindex="0">Notes</label>
+                <div class="dropdown-menu dropdown-menu-bottom-right border border-gray-10">
+                    <a class="dropdown-item text-sm" onclick="editNoteByContent()">Edit Note</a>
+                    <a class="dropdown-item text-sm" onclick="deleteNoteByContent()">Delete Note</a>
+                </div>
+            </div>
+            <a href="logout.php" class="text-[#333]">Logout</a>
+            <button id="darkModeToggle" class="w-10 h-10 flex items-center justify-center">
+                <i id="darkModeIcon" class="ri-moon-line ri-xl"></i>
+            </button>
         </nav>
     </header>
 
     <main class="container mx-auto px-4 py-8">
         <div class="bg-white rounded-lg p-8 shadow-lg relative">
             <h2 class="text-2xl font-bold mb-4">Book Viewer</h2>
+            <div id="pageInfo">Page <span id="currentPage">1</span> of <span id="totalPages">1</span></div>
             <div class="relative">
-                <div id="pdfViewer" class="w-full"></div>
+                <div id="pdfViewer" class="w-full">
+                    <div class="pdf-background"></div>
+                </div>
+                <div id="hiddenTextContainer" class="hidden-text-container"></div>
             </div>
-            <div id="notes-panel" class="floating-panel">
+            <div id="notes-panel" class="notes-panel">
                 <h3>Saved Notes</h3>
                 <div id="notes-list"></div>
                 <button onclick="toggleNotesPanel()" class="mt-2 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">Close</button>
@@ -206,6 +342,7 @@
 
     <script>
         const pdfViewer = document.getElementById('pdfViewer');
+        const hiddenTextContainer = document.getElementById('hiddenTextContainer');
         const contextMenu = document.getElementById('contextMenu');
         const notesList = document.getElementById('notes-list');
         const notesPanel = document.getElementById('notes-panel');
@@ -214,6 +351,10 @@
         const aiWindowContent = document.getElementById('aiWindowContent');
         const floatingAiSection = document.getElementById('floatingAiSection');
         const aiIframe = document.getElementById('aiIframe');
+        const currentPageSpan = document.getElementById('currentPage');
+        const totalPagesSpan = document.getElementById('totalPages');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const darkModeIcon = document.getElementById('darkModeIcon');
 
         let selectedX = null, selectedY = null;
         const params = new URLSearchParams(window.location.search);
@@ -221,18 +362,34 @@
         const notesKey = bookUrl ? `notes_${bookUrl}` : "savedNotes";
 
         let pdfDoc = null;
-        let pageNum = 1;
-        let pageRendering = false;
-        let pageNumPending = null;
-        const scale = 1.0;
+        let currentPage = 1;
+        let totalPages = 0;
+        const scale = 1.5;
         let useCustomContextMenu = true;
         let hasSentFullText = false;
+        let extractedParagraphs = [];
+        let canvasOffsets = [];
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+
+        // Dark/Light Mode Toggle
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+            darkModeIcon.className = isDark ? 'ri-sun-line ri-xl' : 'ri-moon-line ri-xl';
+        }
+
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark');
+            darkModeIcon.className = 'ri-sun-line ri-xl';
+        }
+
+        darkModeToggle.addEventListener('click', toggleDarkMode);
 
         async function loadPDF() {
             try {
                 console.log('Attempting to load PDF with URL:', bookUrl);
+
                 if (bookUrl && !bookUrl.startsWith('http')) {
                     const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
                     bookUrl = `${baseUrl}/${bookUrl}`;
@@ -241,147 +398,292 @@
 
                 if (!bookUrl) {
                     pdfViewer.innerHTML = '<p style="color: red;">No book specified. Add ?book=/path/to/book.pdf to the URL.</p>';
-                    console.error('No book URL provided in query parameters.');
                     return;
                 }
-
-                pdfViewer.innerHTML = '<p>Loading PDF...</p>';
-                pdfViewer.style.display = 'block';
-                pdfViewer.style.background = '#fff';
 
                 const loadingTask = pdfjsLib.getDocument({ url: bookUrl });
                 pdfDoc = await loadingTask.promise;
                 console.log('PDF loaded successfully. Total pages:', pdfDoc.numPages);
-                renderPage(pageNum);
-                fetchNotes();
+
+                totalPages = pdfDoc.numPages;
+                totalPagesSpan.textContent = totalPages;
+
+                await renderAllPages();
+                await extractFullTextWithOCR();
+                displayNotes();
             } catch (error) {
                 console.error('Error loading PDF:', error);
-                pdfViewer.innerHTML = `<p style="color: red;">Failed to load PDF: ${error.message}. Please ensure the file exists and is accessible.</p>`;
-                pdfViewer.style.display = 'block';
+                pdfViewer.innerHTML = `<p style="color: red;">Failed to load PDF: ${error.message}</p>`;
             }
         }
 
-        loadPDF();
-
-        function renderPage(num) {
+        async function renderAllPages() {
             if (!pdfDoc) {
-                console.error('Cannot render page: pdfDoc is not loaded.');
+                console.error('Cannot render pages: pdfDoc is not loaded.');
                 pdfViewer.innerHTML = '<p style="color: red;">PDF document not loaded.</p>';
                 return;
             }
 
-            console.log('Rendering page:', num);
-            pageRendering = true;
-            pdfDoc.getPage(num).then((page) => {
+            pdfViewer.innerHTML = '<div class="pdf-background"></div>';
+            canvasOffsets = [];
+
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                await renderPage(pageNum);
+            }
+            pdfViewer.addEventListener('scroll', updateCurrentPage);
+        }
+
+        async function renderPage(num) {
+            try {
+                const page = await pdfDoc.getPage(num);
                 const viewport = page.getViewport({ scale: scale });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
-                canvas.style.border = '1px solid #000';
+                canvas.dataset.pageNumber = num;
+
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'page-container';
+                pageContainer.dataset.pageNumber = num;
+                pageContainer.style.position = 'relative';
+                pageContainer.style.marginBottom = '10px';
+                pageContainer.appendChild(canvas);
 
                 const renderContext = {
                     canvasContext: context,
                     viewport: viewport
                 };
 
-                pdfViewer.innerHTML = '';
-                pdfViewer.style.display = 'block';
-                console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+                await page.render(renderContext).promise;
+                pdfViewer.appendChild(pageContainer);
 
-                const renderTask = page.render(renderContext);
-                renderTask.promise.then(() => {
-                    console.log('Page rendered successfully:', num);
-                    pageRendering = false;
-                    if (pageNumPending !== null) {
-                        renderPage(pageNumPending);
-                        pageNumPending = null;
-                    }
-                }).catch((error) => {
-                    console.error('Error rendering page:', error);
-                    pdfViewer.innerHTML = `<p style="color: red;">Error rendering page: ${error.message}</p>`;
-                    pageRendering = false;
+                const rect = canvas.getBoundingClientRect();
+                canvasOffsets[num] = {
+                    top: rect.top + window.scrollY,
+                    left: rect.left + window.scrollX
+                };
+
+                // Render the text layer
+                const textContent = await page.getTextContent();
+                const textLayerDiv = document.createElement('div');
+                textLayerDiv.className = 'textLayer';
+                textLayerDiv.style.width = `${canvas.width}px`;
+                textLayerDiv.style.height = `${canvas.height}px`;
+                pageContainer.appendChild(textLayerDiv);
+
+                await pdfjsLib.renderTextLayer({
+                    textContent: textContent,
+                    container: textLayerDiv,
+                    viewport: viewport,
+                    textDivs: []
                 });
 
-                pdfViewer.appendChild(canvas);
-
-                page.getTextContent().then((textContent) => {
-                    const textLayerDiv = document.createElement('div');
-                    textLayerDiv.className = 'textLayer';
-                    textLayerDiv.style.position = 'absolute';
-                    textLayerDiv.style.top = '0';
-                    textLayerDiv.style.left = '0';
-                    textLayerDiv.style.width = `${canvas.width}px`;
-                    textLayerDiv.style.height = `${canvas.height}px`;
-                    textLayerDiv.style.background = 'rgba(255, 255, 0, 0.1)';
-                    pdfViewer.appendChild(textLayerDiv);
-
-                    pdfjsLib.renderTextLayer({
-                        textContent: textContent,
-                        container: textLayerDiv,
-                        viewport: viewport,
-                        textDivs: []
-                    }).promise.catch((error) => {
-                        console.error('Error rendering text layer:', error);
-                    });
-                }).catch((error) => {
-                    console.error('Error getting text content:', error);
-                });
-            }).catch((error) => {
-                console.error('Error getting page:', error);
-                pdfViewer.innerHTML = `<p style="color: red;">Error loading page ${num}: ${error.message}</p>`;
-                pageRendering = false;
-            });
-            pageNum = num;
-        }
-
-        function goToPrevPage() {
-            if (pageNum <= 1 || pageRendering) return;
-            pageNum--;
-            if (pageRendering) {
-                pageNumPending = pageNum;
-            } else {
-                renderPage(pageNum);
+                console.log(`Page ${num} rendered successfully`);
+                renderNotesForPage(num);
+            } catch (error) {
+                console.error(`Error rendering page ${num}:`, error);
             }
         }
 
+        async function extractFullTextWithOCR() {
+            if (!pdfDoc) {
+                console.error('Cannot extract text: pdfDoc is not loaded.');
+                return;
+            }
+
+            extractedParagraphs = [];
+            hiddenTextContainer.innerHTML = '';
+
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                try {
+                    const page = await pdfDoc.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    let pageText = '';
+                    let paragraphs = [];
+                    let currentParagraph = '';
+
+                    // Extract text from PDF
+                    if (textContent.items && textContent.items.length > 0) {
+                        textContent.items.forEach((item, index) => {
+                            const str = item.str.trim();
+                            if (str) {
+                                currentParagraph += str + ' ';
+                                const nextItem = textContent.items[index + 1];
+                                if (!nextItem || Math.abs(item.transform[5] - (nextItem?.transform[5] || 0)) > 10) {
+                                    paragraphs.push(currentParagraph.trim());
+                                    pageText += currentParagraph.trim() + '\n\n';
+                                    currentParagraph = '';
+                                }
+                            }
+                        });
+
+                        if (currentParagraph.trim()) {
+                            paragraphs.push(currentParagraph.trim());
+                            pageText += currentParagraph.trim();
+                        }
+                    } else {
+                        console.log(`No text content found on page ${pageNum}`);
+                    }
+
+                    // Perform OCR on the page
+                    const canvas = document.querySelector(`canvas[data-page-number="${pageNum}"]`);
+                    if (canvas) {
+                        const ocrText = await performOCR(canvas);
+                        if (ocrText) {
+                            pageText += '\n\n[OCR Extracted Text]\n' + ocrText;
+                            paragraphs.push('[OCR] ' + ocrText);
+                            console.log(`OCR text extracted for page ${pageNum}:`, ocrText);
+                        } else {
+                            console.log(`No OCR text extracted for page ${pageNum}`);
+                        }
+                    } else {
+                        console.error(`Canvas for page ${pageNum} not found`);
+                    }
+
+                    // Store the extracted text
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'page-div';
+                    pageDiv.dataset.pageNumber = pageNum;
+                    pageDiv.innerText = pageText || `Page ${pageNum} (No text extracted)`;
+                    hiddenTextContainer.appendChild(pageDiv);
+
+                    extractedParagraphs.push({
+                        page: pageNum,
+                        paragraphs: paragraphs.map((para, idx) => ({
+                            text: para,
+                            top: idx * 50
+                        }))
+                    });
+                } catch (error) {
+                    console.error(`Error extracting text for page ${pageNum}:`, error);
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'page-div';
+                    pageDiv.dataset.pageNumber = pageNum;
+                    pageDiv.innerText = `Page ${pageNum} (Error extracting text)`;
+                    hiddenTextContainer.appendChild(pageDiv);
+
+                    extractedParagraphs.push({
+                        page: pageNum,
+                        paragraphs: []
+                    });
+                }
+            }
+            console.log('Text extracted with OCR:', extractedParagraphs);
+        }
+
+        async function performOCR(canvas) {
+            try {
+                if (!canvas || canvas.width === 0 || canvas.height === 0) {
+                    console.error('Invalid canvas for OCR');
+                    return '';
+                }
+
+                const { createWorker } = Tesseract;
+                const worker = await createWorker();
+                await worker.load();
+                await worker.loadLanguage('eng');
+                await worker.initialize('eng');
+                const { data: { text } } = await worker.recognize(canvas);
+                await worker.terminate();
+                return text.trim();
+            } catch (error) {
+                console.error('OCR Error:', error);
+                return '';
+            }
+        }
+
+        let pagesRead = new Set();
+
+        function markPageAsRead(pageNum) {
+            if (!pagesRead.has(pageNum)) {
+                pagesRead.add(pageNum);
+                updateProgressOnServer(pagesRead.size);
+            }
+        }
+
+        function updateProgressOnServer(pagesReadCount) {
+            const bookId = params.get('book_id'); // Assuming book_id is passed in the URL
+            if (!bookId) {
+                console.error('Book ID is missing in the URL.');
+                return;
+            }
+
+            fetch('update_progress.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ book_id: bookId, pages_read: pagesReadCount })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Progress updated successfully:', data.message);
+                } else {
+                    console.error('Failed to update progress:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating progress:', error);
+            });
+        }
+
+        function updateCurrentPage() {
+            const containers = pdfViewer.getElementsByClassName('page-container');
+            let newCurrentPage = 1;
+
+            for (let i = 0; i < containers.length; i++) {
+                const container = containers[i];
+                const canvas = container.querySelector('canvas');
+                const canvasTop = canvas.offsetTop;
+                const canvasBottom = canvasTop + canvas.height;
+                const scrollTop = pdfViewer.scrollTop + 100;
+
+                if (scrollTop >= canvasTop && scrollTop < canvasBottom) {
+                    newCurrentPage = parseInt(container.dataset.pageNumber);
+                    break;
+                }
+            }
+
+            currentPage = newCurrentPage;
+            currentPageSpan.textContent = currentPage;
+            markPageAsRead(currentPage); // Mark the page as read
+            updateProgressOnServer(currentPage); // Update progress on the server
+            renderNotesForPage(currentPage);
+        }
+
+        function goToPrevPage() {
+            if (currentPage <= 1) return;
+            currentPage--;
+            scrollToPage(currentPage);
+        }
+
         function goToNextPage() {
-            if (!pdfDoc || pageNum >= pdfDoc.numPages || pageRendering) return;
-            pageNum++;
-            if (pageRendering) {
-                pageNumPending = pageNum;
-            } else {
-                renderPage(pageNum);
+            if (currentPage >= totalPages) return;
+            currentPage++;
+            scrollToPage(currentPage);
+        }
+
+        function scrollToPage(pageNum) {
+            const containers = pdfViewer.getElementsByClassName('page-container');
+            if (containers[pageNum - 1]) {
+                containers[pageNum - 1].scrollIntoView({ behavior: 'smooth' });
+                currentPage = pageNum;
+                currentPageSpan.textContent = currentPage;
+                renderNotesForPage(currentPage);
             }
         }
 
         async function extractFullText() {
-            if (!pdfDoc) {
-                console.error('Cannot extract text: pdfDoc is not loaded.');
+            if (!extractedParagraphs || extractedParagraphs.length === 0) {
+                console.error('No extracted paragraphs available');
                 return "";
             }
+
             let fullText = "";
-            try {
-                for (let i = 1; i <= pdfDoc.numPages; i++) {
-                    const page = await pdfDoc.getPage(i);
-                    const textContent = await page.getTextContent();
-                    if (textContent.items.length === 0) {
-                        console.warn(`Page ${i} has no text content.`);
-                        continue;
-                    }
-                    const pageText = textContent.items.map(item => item.str).join(" ");
-                    fullText += pageText + "\n";
-                    console.log(`Extracted text from page ${i}:`, pageText.substring(0, 100) + '...');
-                }
-            } catch (error) {
-                console.error('Error extracting text from PDF:', error);
-                return "";
+            for (let i = 0; i < extractedParagraphs.length; i++) {
+                const pageData = extractedParagraphs[i];
+                fullText += pageData.paragraphs.map(p => p.text).join("\n") + "\n";
             }
-            if (!fullText.trim()) {
-                console.error('Extracted text is empty after processing all pages.');
-                return "";
-            }
-            console.log('Full text extracted successfully:', fullText.substring(0, 100) + '...');
             return fullText.trim();
         }
 
@@ -393,31 +695,94 @@
             addNote: () => {
                 const noteContent = prompt("Enter your note:");
                 if (!noteContent) return;
+
                 const noteId = `note-${Date.now()}`;
+                const pageOffset = canvasOffsets[currentPage] || { top: 0, left: 0 };
                 const note = {
                     id: noteId,
-                    x: selectedX || window.innerWidth / 2,
-                    y: selectedY || window.innerHeight / 2,
+                    x: selectedX - pageOffset.left,
+                    y: selectedY - pageOffset.top,
                     content: noteContent,
-                    bookUrl: bookUrl
+                    bookUrl: bookUrl,
+                    page: currentPage
                 };
+
                 let notes = getSavedNotes();
                 notes.push(note);
                 localStorage.setItem(notesKey, JSON.stringify(notes));
-                addNoteMarker(noteId, note.x, note.y, noteContent,'📍');
+                addNoteMarker(noteId, note.x, note.y, note.content, note.page);
                 displayNotes();
             },
             aiSummarize: () => {
+                console.log('AI Summarization triggered at position:', selectedX, selectedY);
+
                 const selectedText = window.getSelection().toString().trim();
-                if (!selectedText) {
-                    alert('Select text first then click AI Summarize.');
-                    useCustomContextMenu = false;
+                if (selectedText) {
+                    floatingAiSection.style.display = 'block';
+                    aiIframe.src = 'ai.html';
+                    aiIframe.onload = () => {
+                        console.log('Iframe loaded, sending selected text:', selectedText);
+                        try {
+                            aiIframe.contentWindow.postMessage({ selectedText }, '*');
+                        } catch (error) {
+                            console.error('Error sending message to iframe:', error);
+                            alert('Failed to send text to summarization window.');
+                        }
+                    };
                     return;
                 }
+
+                const containers = pdfViewer.getElementsByClassName('page-container');
+                let clickedPage = currentPage;
+                let clickedParagraph = null;
+
+                for (let i = 0; i < containers.length; i++) {
+                    const container = containers[i];
+                    const canvas = container.querySelector('canvas');
+                    const canvasTop = canvas.offsetTop;
+                    const canvasBottom = canvasTop + canvas.height;
+                    if (selectedY >= canvasTop && selectedY <= canvasBottom) {
+                        clickedPage = parseInt(container.dataset.pageNumber);
+                        break;
+                    }
+                }
+
+                const pageData = extractedParagraphs.find(p => p.page === clickedPage);
+                if (!pageData || !pageData.paragraphs || pageData.paragraphs.length === 0) {
+                    console.error('No paragraphs available for page:', clickedPage, 'Extracted paragraphs:', extractedParagraphs);
+                    alert('No text available on this page for summarization.');
+                    return;
+                }
+
+                const canvas = containers[clickedPage - 1].querySelector('canvas');
+                clickedParagraph = pageData.paragraphs.reduce((prev, curr) => {
+                    const prevDiff = Math.abs(prev.top - (selectedY - canvas.offsetTop));
+                    const currDiff = Math.abs(curr.top - (selectedY - canvas.offsetTop));
+                    return currDiff < prevDiff ? curr : prev;
+                });
+
+                if (!clickedParagraph || !clickedParagraph.text) {
+                    console.error('No paragraph text found at position:', selectedY, 'Page data:', pageData);
+                    alert('No paragraph text found at this position.');
+                    return;
+                }
+
+                console.log('Selected paragraph text:', clickedParagraph.text);
+
                 floatingAiSection.style.display = 'block';
                 aiIframe.src = 'ai.html';
                 aiIframe.onload = () => {
-                    aiIframe.contentWindow.postMessage({ selectedText }, '*');
+                    console.log('Iframe loaded, sending paragraph text:', clickedParagraph.text);
+                    try {
+                        aiIframe.contentWindow.postMessage({ selectedText: clickedParagraph.text }, '*');
+                    } catch (error) {
+                        console.error('Error sending message to iframe:', error);
+                        alert('Failed to send text to summarization window.');
+                    }
+                };
+                aiIframe.onerror = () => {
+                    console.error('Error loading ai.html in iframe');
+                    alert('Failed to load summarization window.');
                 };
             },
             mcq: async () => {
@@ -433,7 +798,6 @@
                 }
                 setTimeout(() => {
                     mcqWindow.postMessage({ fullText }, '*');
-                    console.log('Sent fullText to MCQ window:', fullText.substring(0, 100) + '...');
                 }, 1000);
             },
             flashCards: async () => {
@@ -442,7 +806,6 @@
                     alert('No text available to generate Flash Cards.');
                     return;
                 }
-                console.log('Opening flash.html with fullText:', fullText.substring(0, 100) + '...');
                 const flashWindow = window.open('flash.html', 'FlashWindow', 'width=800,height=600');
                 if (!flashWindow) {
                     alert('Please allow pop-ups for this site.');
@@ -451,15 +814,12 @@
                 if (!hasSentFullText) {
                     setTimeout(() => {
                         flashWindow.postMessage({ fullText }, '*');
-                        console.log('Sent fullText to Flash window:', fullText.substring(0, 100) + '...');
                         hasSentFullText = true;
                     }, 1000);
                 }
                 window.addEventListener('message', (e) => {
                     if (e.data.request === 'sendFullText' && flashWindow) {
-                        console.log('Flash window requested to resend fullText.');
                         flashWindow.postMessage({ fullText }, '*');
-                        console.log('Resent fullText to Flash window:', fullText.substring(0, 100) + '...');
                     }
                 });
             }
@@ -467,18 +827,15 @@
 
         function handleFeatureClick(e) {
             const action = e.target.getAttribute('data-action');
-            if (featureHandlers[action]) {
-                featureHandlers[action]();
-            }
+            if (featureHandlers[action]) featureHandlers[action]();
             contextMenu.style.display = 'none';
-            console.log('Handled feature click:', action);
         }
 
         document.querySelectorAll('#contextMenu li').forEach(item => {
             item.addEventListener('click', handleFeatureClick);
         });
 
-        document.querySelectorAll('.dropdown-menu a').forEach(item => {
+        document.querySelectorAll('.dropdown-menu a[data-action]').forEach(item => {
             item.addEventListener('click', handleFeatureClick);
         });
 
@@ -487,17 +844,17 @@
         }
 
         function displayNotes() {
-            notesList.innerHTML = "";  
+            notesList.innerHTML = '';
             let notes = getSavedNotes();
             notes.forEach((note) => {
-                const noteItem = document.createElement("div");
-                noteItem.className = "note-item";
+                const noteItem = document.createElement('div');
+                noteItem.className = 'note-item';
+                noteItem.id = `note-item-${note.id}`;
                 noteItem.innerHTML = `
                     <p contenteditable="true" onblur="editNote('${note.id}', this)">${note.content}</p>
                     <button onclick="deleteNote('${note.id}')">🗑️</button>
                 `;
                 notesList.appendChild(noteItem);
-                addNoteMarker(note.id, note.x, note.y, note.content);
             });
         }
 
@@ -507,6 +864,8 @@
             if (note) {
                 note.content = element.innerText.trim();
                 localStorage.setItem(notesKey, JSON.stringify(notes));
+                const marker = document.getElementById(id);
+                if (marker) marker.title = note.content;
             }
         }
 
@@ -515,38 +874,99 @@
             notes = notes.filter(n => n.id !== id);
             localStorage.setItem(notesKey, JSON.stringify(notes));
             document.getElementById(id)?.remove();
+            document.getElementById(`note-item-${id}`)?.remove();
             displayNotes();
         }
 
-        function addNoteMarker(id, x, y, content) {
+        function editNoteByContent() {
+            const noteContent = prompt("Enter the content of the note to edit:");
+            if (!noteContent) return;
+
+            const noteElement = Array.from(notesList.children).find(note => 
+                note.querySelector('p').textContent.trim() === noteContent.trim()
+            );
+
+            if (!noteElement) {
+                alert("Note not found.");
+                return;
+            }
+
+            const newContent = prompt("Enter the new content for the note:", noteContent);
+            if (!newContent) return;
+
+            const noteId = noteElement.id.replace('note-item-', '');
+            let notes = getSavedNotes();
+            let note = notes.find(n => n.id === noteId);
+            if (note) {
+                note.content = newContent;
+                localStorage.setItem(notesKey, JSON.stringify(notes));
+                noteElement.querySelector('p').textContent = newContent;
+                const marker = document.getElementById(noteId);
+                if (marker) marker.title = newContent;
+                alert("Note updated successfully.");
+            }
+        }
+
+        function deleteNoteByContent() {
+            const noteContent = prompt("Enter the content of the note to delete:");
+            if (!noteContent) return;
+
+            const noteElement = Array.from(notesList.children).find(note => 
+                note.querySelector('p').textContent.trim() === noteContent.trim()
+            );
+
+            if (!noteElement) {
+                alert("Note not found.");
+                return;
+            }
+
+            const noteId = noteElement.id.replace('note-item-', '');
+            let notes = getSavedNotes();
+            notes = notes.filter(n => n.id !== noteId);
+            localStorage.setItem(notesKey, JSON.stringify(notes));
+            noteElement.remove();
+            document.getElementById(noteId)?.remove();
+            alert("Note deleted successfully.");
+        }
+
+        function addNoteMarker(id, x, y, content, page) {
+            if (page !== currentPage) return;
+            const pageContainer = document.querySelector(`.page-container[data-page-number="${page}"]`);
+            if (!pageContainer) {
+                console.error(`Page ${page} not found for note marker.`);
+                return;
+            }
+
             const marker = document.createElement('span');
             marker.id = id;
             marker.className = 'note-marker';
+            marker.style.position = 'absolute';
             marker.style.top = `${y}px`;
             marker.style.left = `${x}px`;
             marker.style.display = 'block';
             marker.title = content;
             marker.textContent = '📍';
-            document.body.appendChild(marker);
-            console.log('Added note marker:', id, 'at position:', x, y);
+
+            pageContainer.appendChild(marker);
+        }
+
+        function renderNotesForPage(page) {
+            document.querySelectorAll('.note-marker').forEach(marker => marker.remove());
+            let notes = getSavedNotes();
+            notes.forEach((note) => {
+                if (note.page === page) {
+                    addNoteMarker(note.id, note.x, note.y, note.content, note.page);
+                }
+            });
         }
 
         function toggleNotesPanel() {
             notesPanel.style.display = notesPanel.style.display === 'none' ? 'block' : 'none';
-            console.log('Toggled notes panel. Display:', notesPanel.style.display);
         }
 
         function closeAIWindow() {
             aiWindow.style.display = 'none';
-            console.log('Closed AI window');
         }
-
-        window.addEventListener('message', (e) => {
-            if (e.data === 'closeAiSection') {
-                floatingAiSection.style.display = 'none';
-                console.log('Closed floating AI section');
-            }
-        });
 
         window.addEventListener('contextmenu', (e) => {
             if (useCustomContextMenu) {
@@ -556,15 +976,11 @@
                 contextMenu.style.top = `${selectedY}px`;
                 contextMenu.style.left = `${selectedX}px`;
                 contextMenu.style.display = 'block';
-                console.log('Opened context menu at:', selectedX, selectedY);
             }
         });
 
         document.addEventListener('click', (e) => {
-            if (!contextMenu.contains(e.target)) {
-                contextMenu.style.display = 'none';
-                console.log('Closed context menu');
-            }
+            if (!contextMenu.contains(e.target)) contextMenu.style.display = 'none';
         });
 
         document.addEventListener('selectionchange', () => {
@@ -574,7 +990,14 @@
             }
         });
 
-        window.onload = displayNotes;
+        window.addEventListener('message', (e) => {
+            if (e.data === 'closeAiSection') floatingAiSection.style.display = 'none';
+        });
+
+        window.onload = () => {
+            loadPDF();
+            displayNotes();
+        };
     </script>
 </body>
 </html>

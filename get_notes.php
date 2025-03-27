@@ -1,6 +1,14 @@
 <?php
 session_start();
 
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(E_ALL);
+ini_set('log_errors', 1);
+ini_set('error_log', 'C:/wamp64/logs/php_error.log');
+
+header('Content-Type: application/json');
+
 $host = "localhost";
 $username = "root";
 $password = "";
@@ -9,7 +17,7 @@ $database = "readmind";
 $conn = new mysqli($host, $username, $password, $database);
 
 if ($conn->connect_error) {
-    echo json_encode(["success" => false, "error" => "Database connection failed"]);
+    echo json_encode(["success" => false, "error" => "Database connection failed: " . $conn->connect_error]);
     exit;
 }
 
@@ -26,8 +34,13 @@ if (empty($book_url)) {
     exit;
 }
 
-$sql = "SELECT note_id, x, y, content FROM notes WHERE user_id = ? AND book_url = ?";
+$sql = "SELECT note_id, x, y, content, page_num FROM notes WHERE user_id = ? AND book_url = ?";
 $stmt = $conn->prepare($sql);
+if (!$stmt) {
+    echo json_encode(["success" => false, "error" => "Prepare failed: " . $conn->error]);
+    exit;
+}
+
 $stmt->bind_param("is", $user_id, $book_url);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -36,9 +49,10 @@ $notes = [];
 while ($row = $result->fetch_assoc()) {
     $notes[] = [
         'id' => $row['note_id'],
-        'x' => $row['x'],
-        'y' => $row['y'],
-        'content' => $row['content']
+        'x' => (float)$row['x'],
+        'y' => (float)$row['y'],
+        'content' => $row['content'],
+        'pageNum' => (int)$row['page_num']
     ];
 }
 
