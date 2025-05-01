@@ -35,11 +35,7 @@
 
 ---
 
-## 📸 Screenshots
 
-*Include screenshots of your homepage, reading view, summarization, and MCQ page here if needed.*
-
----
 
 ## 🙋‍♂️ About Me
 
@@ -51,7 +47,8 @@
 
 - This project is currently hosted **locally** using WAMP.
 - Source code and screenshots are included in the submitted folder.
-- A demo video is available at: [Insert YouTube/Drive Link Here]
+- A demo video is available at: THE REPO NAMED DEMO VIDEO
+  
 
 ---
 
