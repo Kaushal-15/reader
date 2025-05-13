@@ -192,30 +192,65 @@
     </div>
 
     <script>
+        // Dark Mode Toggle
+        const darkModeToggle = document.getElementById("darkModeToggle");
+        const body = document.body;
+    
+        // Load dark mode preference from localStorage
+        if (localStorage.getItem("darkMode") === "enabled") {
+            body.classList.add("dark-mode");
+            darkModeToggle.textContent = "☀️ Light Mode";
+        }
+    
+        darkModeToggle.addEventListener("click", () => {
+            body.classList.toggle("dark-mode");
+            if (body.classList.contains("dark-mode")) {
+                darkModeToggle.textContent = "☀️ Light Mode";
+                localStorage.setItem("darkMode", "enabled");
+            } else {
+                darkModeToggle.textContent = "🌙 Dark Mode";
+                localStorage.setItem("darkMode", "disabled");
+            }
+        });
+    
+        // Signup Form Submission
         document.getElementById("signupForm").addEventListener("submit", function(event) {
             event.preventDefault();
-            const fullName = document.getElementById("fullName").value;
-            const email = document.getElementById("email").value;
+    
+            const fullName = document.getElementById("fullName").value.trim();
+            const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value;
     
-            fetch("signup.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: `fullName=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
-            })
-            .then(response => {
-                if (!response.ok) throw new Error("Network response was not ok: " + response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log("Signup response:", data);
-                alert(data.message);
-                if (data.status === "success") window.location.href = "books.html"; // Redirect to books.html
-            })
-            .catch(error => {
-                console.error("Fetch error:", error);
-                alert("An error occurred: " + error.message);
-            });
+            // Basic validation
+            if (fullName.length < 2) {
+                alert("Full name must be at least 2 characters long.");
+                return;
+            }
+    
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert("Please enter a valid email address.");
+                return;
+            }
+    
+            if (password.length < 6) {
+                alert("Password must be at least 6 characters long.");
+                return;
+            }
+    
+            // Check if user already exists
+            const users = JSON.parse(localStorage.getItem("users")) || [];
+            if (users.some(u => u.email === email)) {
+                alert("An account with this email already exists. Please log in.");
+                return;
+            }
+    
+            // Store new user
+            users.push({ fullName, email, password });
+            localStorage.setItem("users", JSON.stringify(users));
+    
+            alert("Sign up successful! You can now log in.");
+            window.location.href = "login.html";
         });
     </script>
 
