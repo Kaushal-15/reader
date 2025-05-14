@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <style>
+        /* General Styles */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #ecd69f;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background-color: #222;
+            color: white;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: black;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            margin-right: 20px;
+            font-weight: bold;
+        }
+
+        .navbar .dark-mode-toggle {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+
+        .navbar .dark-mode-toggle:hover {
+            background: grey;
+        }
+
+        /* Form Box */
+        .form-box {
+            max-width: 320px;
+            background: black;
+            color: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            text-align: center;
+            padding: 32px;
+            margin-top: 80px;
+        }
+
+        .title {
+            font-weight: bold;
+            font-size: 1.6rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            font-family: 'Times New Roman', Times, serif;
+            color: #ddd;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 1rem 0 0.5rem;
+        }
+
+        .input {
+            background: white;
+            border: 1px solid #ddd;
+            outline: none;
+            height: 40px;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: black;
+        }
+
+        .input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+
+        .form button {
+            background-color: rgba(0, 0, 0, 0.514);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 10px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .form button:hover {
+            background-color: rgba(50, 50, 50, 0.8);
+        }
+
+        .form-section {
+            padding: 16px;
+            font-size: 0.85rem;
+            background-color: grey;
+            box-shadow: 0 -1px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-section a {
+            font-weight: bold;
+            color: #fff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .form-section a:hover {
+            text-decoration: underline;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #121212;
+            color: white;
+        }
+
+        body.dark-mode .form-box {
+            background: #333;
+        }
+
+        body.dark-mode .input {
+            background: #444;
+            color: white;
+            border: 1px solid #777;
+        }
+
+        body.dark-mode .form-section {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div>
+            <a href="index.html">🏠 Home</a>
+            <a href="login.html"> Login</a>
+        </div>
+        <button id="darkModeToggle" class="dark-mode-toggle">🌙 Dark Mode</button>
+    </nav>
+
+    <!-- Sign Up Form -->
+    <div class="form-box">
+        <form class="form" id="signupForm">
+            <span class="title">Sign up</span>
+            <br>
+            <span class="subtitle">Create a free account with your email.</span>
+            <div class="form-container">
+                <input type="text" id="fullName" class="input" placeholder="Full Name" required>
+                <input type="email" id="email" class="input" placeholder="Email" required>
+                <input type="password" id="password" class="input" placeholder="Password" required>
+            </div>
+            <button type="submit">Sign up</button>
+        </form>
+        <div class="form-section">
+            <p>Have an account? <a href="login.html">Log in</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Dark Mode Toggle
+        const darkModeToggle = document.getElementById("darkModeToggle");
+        const body = document.body;
+    
+        // Load dark mode preference from localStorage
+        if (localStorage.getItem("darkMode") === "enabled") {
+            body.classList.add("dark-mode");
+            darkModeToggle.textContent = "☀️ Light Mode";
+        }
+    
+        darkModeToggle.addEventListener("click", () => {
+            body.classList.toggle("dark-mode");
+            if (body.classList.contains("dark-mode")) {
+                darkModeToggle.textContent = "☀️ Light Mode";
+                localStorage.setItem("darkMode", "enabled");
+            } else {
+                darkModeToggle.textContent = "🌙 Dark Mode";
+                localStorage.setItem("darkMode", "disabled");
+            }
+        });
+    
+        // Signup Form Submission
+       // Signup Form Submission (Replace localStorage logic)
+document.getElementById("signupForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const fullName = document.getElementById("fullName").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    try {
+        const res = await fetch('http://localhost:5000/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullName, email, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        alert("Sign up successful! You can now log in.");
+        window.location.href = "login.html";
+    } catch (err) {
+        alert(err.message);
+    }
+});
+
+    </script>
+
+</body>
+</html>
