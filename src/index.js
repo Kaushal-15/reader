@@ -1,12 +1,14 @@
 const express = require('express');
 const path = require('path');
 const bcrypt = require('bcrypt');
+const cors=require('cors');
 const userSchema = require('./user'); 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+//cors
+app.use(cors({ origin: 'https://kaushal-15.github.io/reader/' }));
 // static
 app.use(express.static(path.join(__dirname, '..', 'img')));
 
