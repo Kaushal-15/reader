@@ -175,23 +175,23 @@
 
     <!-- Sign Up Form -->
     <div class="form-box">
-        <form class="form" id="signupForm">
+        <form class="form" id="signupForm" action="/signin" method="POST">
             <span class="title">Sign up</span>
             <br>
             <span class="subtitle">Create a free account with your email.</span>
             <div class="form-container">
-                <input type="text" id="fullName" class="input" placeholder="Full Name" required>
-                <input type="email" id="email" class="input" placeholder="Email" required>
-                <input type="password" id="password" class="input" placeholder="Password" required>
+                <input type="text" id="fullName" name="fullname" class="input" placeholder="Full Name" required>
+                <input type="email" id="email" name="email" class="input" placeholder="Email" required>
+                <input type="password" id="password" name="password" class="input" placeholder="Password" required>
             </div>
             <button type="submit">Sign up</button>
         </form>
         <div class="form-section">
-            <p>Have an account? <a href="login.html">Log in</a></p>
+            <p>Have an account? <a href="/login">Log in</a></p>
         </div>
     </div>
 
-    <script>
+    <!-- <script>
         // Dark Mode Toggle
         const darkModeToggle = document.getElementById("darkModeToggle");
         const body = document.body;
@@ -239,7 +239,7 @@ document.getElementById("signupForm").addEventListener("submit", async function(
     }
 });
 
-    </script>
+    </script> -->
 
 </body>
 </html>

@@ -2,11 +2,12 @@
   "name": "reader",
   "version": "1.0.0",
   "description": "**ReadMind** is an intelligent online book reading platform built to enhance the reading experience using AI. It helps users not only read books but also understand, remember, and revise them effectively.",
-  "main": "server.js",
-  "scripts": {
-    "dev": "nodemon web-server.js",
-    "start": "node web-server.js"
-  },
+ "main": "src/index.js",
+"scripts": {
+  "dev": "nodemon src/index.js",
+  "start": "node src/index.js"
+},
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Kaushal-15/read-mind.git"
@@ -20,10 +21,12 @@
   "homepage": "https://github.com/Kaushal-15/read-mind#readme",
   "dependencies": {
     "@tailwindcss/vite": "^4.0.7",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
+    "ejs": "^3.1.10",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
     "fs": "^0.0.1-security",

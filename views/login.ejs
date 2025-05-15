@@ -173,20 +173,20 @@
 
     <!-- Login Form -->
     <div class="form-box">
-        <form class="form" id="loginForm">
+        <form class="form" id="loginForm" action="/login" method="POST">
             <span class="title">Login</span>
             <div class="form-container">
-                <input type="text" id="email" class="input" placeholder="Email" required>
-                <input type="password" id="password" class="input" placeholder="Password" required>
+                <input type="email" id="email" name="email" class="input" placeholder="Email" required>
+                <input type="password" id="password" name="password" class="input" placeholder="Password" required>
             </div>
-            <button type="submit">Login</button>
+            <button type="submit" class="submit-btn">Login</button>
         </form>
         <div class="form-section">
-            <p>Don't have an account? <a href="signin.html">Sign Up</a></p>
+            <p>Don't have an account? <a href="signin.ejs">Sign Up</a></p>
         </div>
     </div>
 
-    <script>
+    <!-- <script>
         // Wait for DOM to load to avoid null errors
         document.addEventListener("DOMContentLoaded", function() {
             // Dark Mode Toggle
@@ -236,6 +236,6 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
 });
 
         });
-    </script>
+    </script> -->
 </body>
 </html>
