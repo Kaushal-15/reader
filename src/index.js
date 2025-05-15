@@ -28,6 +28,45 @@ app.get(['/books', '/books.html'], (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'books.html'));
 });
 
+app.get(['/library', '/library.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'library.html'));
+});
+
+app.get(['/pdfviewer', '/pdfviewer.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'pdfviewer.html'));
+});
+
+app.get(['/upload', '/upload.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'upload.html'));
+});
+
+app.get(['/ai.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'ai.html'));
+});
+
+app.get(['/dd.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'dd.html'));
+});
+
+app.get(['/dict.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'dict.html'));
+});
+
+app.get(['/flash.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'flash.html'));
+});
+
+app.get(['/mcq.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'mcq.html'));
+});
+
+app.get(['/progress.html','/progress'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'progress.html'));
+});
+
+app.get(['/view.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'view.html'));
+});
 // Register user
 app.post('/signin', async (req, res) => {
     try {
